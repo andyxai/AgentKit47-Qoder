@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.4] - 2026-05-12
+
+### 📝 文档
+
+- **学习文档外部引用校准**
+  - 修正 mattpocock/skills 数量描述（7 → 20 Skills）
+  - 修正 gstack 目录数量描述（60 → 62 个目录，约 31 个 Skills）
+  - 修正 spec-kit 扩展能力描述（明确 94 个社区扩展）
+  - 修正 Superpowers Agent 编排描述（明确有自动触发机制）
+  - 修正 OpenSpec 工作流阶段描述（移除错误的 L1/L2/L3 分级归属）
+- **学习文档格式统一**
+  - index.md 章节标题简化（去除 emoji 装饰）
+  - 模块格式说明简化，更直接
+
 ## [0.6.3] - 2026-05-12
 
 ### 🔧 工具

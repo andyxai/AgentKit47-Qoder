@@ -93,13 +93,40 @@ else
     exit 1
 fi
 
+# ============================================================
+# 仓库地址配置（自动检测 + 环境变量覆盖 + 默认值）
+# ============================================================
+
+# 1. 从当前脚本所在仓库自动检测 origin（git clone 执行时）
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$SCRIPT_DIR/.git/config" ]; then
+    GIT_URL="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo "")"
+    if [[ "$GIT_URL" == git@* ]]; then
+        GIT_URL="https://$(echo "$GIT_URL" | sed 's|git@||;s|:|/|')"
+    fi
+fi
+
+# 2. 优先级: 环境变量 > git 检测 > 默认值
+REPO_URL="${AK47_REPO:-${GIT_URL:-https://github.com/andyxai/AgentKit47-Qoder.git}}"
+# 去掉可能的 git+ 前缀（兼容旧格式）
+REPO_URL="${REPO_URL#git+}"
+
+# GitHub 项目地址（用于 API 查询标签）
+GITHUB_API="https://api.github.com/repos/andyxai/AgentKit47-Qoder/tags"
+
 # 获取可用版本
 echo ""
 echo "-----------------------------------------"
 echo "获取可用版本..."
 echo "-----------------------------------------"
 
+# 优先用 git ls-remote（对 GitLab 最可靠），失败则用 GitHub API
 LATEST_TAG=$(git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*$' | sort -V | tail -1)
+
+if [ -z "$LATEST_TAG" ]; then
+    # 回退：通过 GitHub API 获取标签（无需认证）
+    LATEST_TAG=$(curl -s "$GITHUB_API" 2>/dev/null | grep -o '"name": *"v[0-9.]*"' | head -1 | grep -o 'v[0-9.]*' || echo "")
+fi
 
 if [ -z "$LATEST_TAG" ]; then
     echo -e "${YELLOW}⚠ 无法获取远程标签，将安装默认分支最新代码${NC}"
@@ -169,24 +196,6 @@ elif [ "$INSTALL_TARGET" = "master" ]; then
 else
     echo -e "${BLUE}安装指定版本: $INSTALL_TARGET${NC}"
 fi
-
-# ============================================================
-# 仓库地址配置（自动检测 + 环境变量覆盖 + 默认值）
-# ============================================================
-
-# 1. 从当前脚本所在仓库自动检测 origin（git clone 执行时）
-SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-if [ -f "$SCRIPT_DIR/.git/config" ]; then
-    GIT_URL="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo "")"
-    if [[ "$GIT_URL" == git@* ]]; then
-        GIT_URL="https://$(echo "$GIT_URL" | sed 's|git@||;s|:|/|')"
-    fi
-fi
-
-# 2. 优先级: 环境变量 > git 检测 > 默认值
-REPO_URL="${AK47_REPO:-${GIT_URL:-https://github.com/andyxai/AgentKit47-Qoder.git}}"
-# 去掉可能的 git+ 前缀（兼容旧格式）
-REPO_URL="${REPO_URL#git+}"
 
 # 执行安装
 echo ""
