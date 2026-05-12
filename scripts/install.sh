@@ -102,8 +102,8 @@ echo "-----------------------------------------"
 LATEST_TAG=$(git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*$' | sort -V | tail -1)
 
 if [ -z "$LATEST_TAG" ]; then
-    echo -e "${YELLOW}⚠ 无法获取远程标签，使用默认版本 v0.1.0${NC}"
-    LATEST_TAG="v0.1.0"
+    echo -e "${YELLOW}⚠ 无法获取远程标签，将安装默认分支最新代码${NC}"
+    LATEST_TAG=""
 else
     echo -e "${GREEN}✓ 最新稳定版: $LATEST_TAG${NC}"
 fi
@@ -112,14 +112,18 @@ fi
 if [ -z "$INSTALL_TARGET" ] || [ "$INSTALL_TARGET" = "latest" ]; then
     # 安静模式或默认：安装最新版
     if [ "$QUIET_MODE" = true ]; then
-        INSTALL_TARGET="$LATEST_TAG"
+        INSTALL_TARGET="${LATEST_TAG:-}"
     else
         # 显示安装选项
         echo ""
         echo "-----------------------------------------"
         echo "选择安装方式:"
         echo "-----------------------------------------"
-        echo "1) 安装最新稳定版 ($LATEST_TAG) - 推荐"
+        if [ -n "$LATEST_TAG" ]; then
+            echo "1) 安装最新稳定版 ($LATEST_TAG) - 推荐"
+        else
+            echo "1) 安装默认分支最新代码 - 推荐"
+        fi
         echo "2) 安装 master 分支 (最新代码)"
         echo "3) 安装指定版本"
         echo "4) 退出"
@@ -129,7 +133,7 @@ if [ -z "$INSTALL_TARGET" ] || [ "$INSTALL_TARGET" = "latest" ]; then
         
         case $choice in
             1)
-                INSTALL_TARGET="$LATEST_TAG"
+                INSTALL_TARGET="${LATEST_TAG:-}"
                 ;;
             2)
                 INSTALL_TARGET="master"
@@ -251,9 +255,16 @@ ORIGINAL_DIR=$(pwd)
 INSTALL_DIR=$(mktemp -d)
 
 echo "→ 克隆仓库到临时目录..."
-if ! git clone --depth 1 --branch "$INSTALL_TARGET" "$REPO_URL" "$INSTALL_DIR" 2>/dev/null; then
-    echo -e "${RED}✗ 克隆失败${NC}"
-    exit 1
+if [ -n "$INSTALL_TARGET" ]; then
+    if ! git clone --depth 1 --branch "$INSTALL_TARGET" "$REPO_URL" "$INSTALL_DIR" 2>/dev/null; then
+        echo -e "${RED}✗ 克隆失败 (分支: $INSTALL_TARGET)${NC}"
+        exit 1
+    fi
+else
+    if ! git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" 2>/dev/null; then
+        echo -e "${RED}✗ 克隆失败${NC}"
+        exit 1
+    fi
 fi
 
 cd "$INSTALL_DIR"

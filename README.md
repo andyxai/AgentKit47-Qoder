@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.6.2-blue" alt="Version"/></a>
+    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.6.3-blue" alt="Version"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/node-%3E%3D20.19.0-brightgreen" alt="Node"/></a>
 </p>

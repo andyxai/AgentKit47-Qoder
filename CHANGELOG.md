@@ -5,6 +5,22 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.3] - 2026-05-12
+
+### 🔧 工具
+
+- 新增 `scripts/release-guide.sh`：指导 GitHub 项目 AI 进行规范化语义化版本发布
+- 新增 `scripts/github-push.sh`：GitHub 项目 AI 自动化 git add/commit/push 工具
+
+### 🐛 修复
+
+- 安装脚本远程标签获取失败时不再硬编码 v0.1.0，改为克隆默认分支
+- 同步脚本修复 .git 目录保留逻辑，避免每次同步后丢失 git 历史
+
+### 📝 文档
+
+- 经验库与设计决策文档更新
+
 ## [0.6.2] - 2026-05-12
 
 ### 📝 文档

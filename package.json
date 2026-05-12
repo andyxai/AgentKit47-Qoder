@@ -1,6 +1,6 @@
 {
   "name": "agentkit47",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "AI 工程化脚手架 - 编排 OpenSpec 和 Superpowers，搭建 AI 辅助开发基础设施",
   "type": "module",
   "main": "./dist/cli/index.js",
