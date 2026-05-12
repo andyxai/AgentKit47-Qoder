@@ -1,0 +1,33 @@
+#!/bin/bash
+# PostToolUse Hook: 检查新创建的文档是否标注了研究来源
+# 生成时间: {{generationTime}}
+
+TOOL_INPUT=$(cat)
+FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+
+# 如果是文档文件（.md）
+if echo "$FILE_PATH" | grep -q '\.md$'; then
+  # 检查是否包含研究文档引用或官方文档链接
+  HAS_RESEARCH_REF=$(grep -c 'docs/research/' "$FILE_PATH" 2>/dev/null || echo "0")
+  HAS_DOC_URL=$(grep -c 'https://docs\.' "$FILE_PATH" 2>/dev/null || echo "0")
+  
+  if [ "$HAS_RESEARCH_REF" -eq 0 ] && [ "$HAS_DOC_URL" -eq 0 ]; then
+    echo "⚠️  警告：文档可能缺少官方引用来源"
+    echo "建议："
+    echo "  1. 使用任何可用工具查阅官方文档"
+    echo "  2. 保存关键内容到 docs/research/<topic>.md"
+    echo "  3. 在文档中引用研究文件或官方 URL"
+    echo "规则：禁止臆想配置和 API"
+    
+    # 记录偏离
+    if [ -d ".ak47" ]; then
+      echo "- timestamp: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> .ak47/deviations.log
+      echo "  deviation: \"创建文档未标注官方引用\"" >> .ak47/deviations.log
+      echo "  rule_violated: \"禁止臆想配置和 API\"" >> .ak47/deviations.log
+      echo "  reason: \"待验证\"" >> .ak47/deviations.log
+      echo "  impact: \"high\"" >> .ak47/deviations.log
+      echo "  user_approval: true" >> .ak47/deviations.log
+      echo "📝 已记录到 .ak47/deviations.log"
+    fi
+  fi
+fi

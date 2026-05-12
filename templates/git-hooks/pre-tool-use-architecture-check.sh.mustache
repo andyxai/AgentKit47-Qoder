@@ -1,0 +1,35 @@
+#!/bin/bash
+# pre-tool-use 钩子：架构审查提醒
+# 在 AI 使用工具时检查是否需要架构审查
+
+# 检查架构审查是否过期
+LAST_REVIEW=".ak47/architecture-review-last.txt"
+THRESHOLD_DAYS=7
+
+if [ -f "$LAST_REVIEW" ]; then
+    LAST_DATE=$(cat "$LAST_REVIEW")
+    
+    # 计算距离上次审查的天数
+    if command -v date >/dev/null 2>&1; then
+        # macOS / Linux
+        CURRENT_EPOCH=$(date +%s)
+        LAST_EPOCH=$(date -d "$LAST_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$LAST_DATE" +%s 2>/dev/null)
+        
+        if [ -n "$LAST_EPOCH" ]; then
+            DAYS_SINCE=$(( (CURRENT_EPOCH - LAST_EPOCH) / 86400 ))
+            
+            if [ $DAYS_SINCE -ge $THRESHOLD_DAYS ]; then
+                echo "💡 提示：已经超过 $DAYS_SINCE 天未进行架构审查"
+                echo "   建议运行: ak47 improve-architecture"
+                echo ""
+            fi
+        fi
+    fi
+else
+    # 首次使用提示
+    if [ -d ".ak47" ]; then
+        echo "💡 提示：运行 ak47 improve-architecture 进行首次架构审查"
+        echo "   这将帮助发现代码库中的架构熵增问题"
+        echo ""
+    fi
+fi

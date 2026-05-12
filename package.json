@@ -1,0 +1,80 @@
+{
+  "name": "agentkit47",
+  "version": "0.6.2",
+  "description": "AI 工程化脚手架 - 编排 OpenSpec 和 Superpowers，搭建 AI 辅助开发基础设施",
+  "type": "module",
+  "main": "./dist/cli/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/cli/index.js"
+    },
+    "./core": {
+      "import": "./dist/core/index.js"
+    }
+  },
+  "bin": {
+    "ak47": "dist/cli/index.js",
+    "agentkit47": "dist/cli/index.js"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "tsc && npm run copy-templates",
+    "copy-templates": "cp -r templates dist/templates 2>/dev/null || xcopy /E /I templates dist\\templates >nul 2>&1 || echo 'Templates copy skipped'",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "format": "prettier --write src/ tests/",
+    "validate-templates": "npx tsx scripts/validate-templates.ts",
+    "prebuild": "npm run validate-templates"
+  },
+  "dependencies": {
+    "@fission-ai/openspec": "^1.3.0",
+    "@inquirer/prompts": "^7.0.0",
+    "chalk": "^5.0.0",
+    "commander": "^13.0.0",
+    "fast-glob": "^3.3.0",
+    "mustache": "^4.2.0",
+    "ora": "^8.0.0",
+    "yaml": "^2.3.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/mustache": "^4.2.5",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.59.1",
+    "vitest": "^3.0.0"
+  },
+  "files": [
+    "dist/",
+    "templates/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "scaffold",
+    "openspec",
+    "superpowers",
+    "cli"
+  ],
+  "author": "andy.zx",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andyxai/AgentKit47-Qoder.git"
+  },
+  "homepage": "https://github.com/andyxai/AgentKit47-Qoder",
+  "bugs": {
+    "url": "https://github.com/andyxai/AgentKit47-Qoder/issues"
+  }
+}

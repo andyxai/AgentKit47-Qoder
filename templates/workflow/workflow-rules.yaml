@@ -1,0 +1,340 @@
+# 工作流引导规则定义
+# 定义状态推断逻辑和下一步引导策略
+
+# ============================================
+# 状态推断规则
+# ============================================
+
+stateInference:
+  # 状态同步策略 - 基于 Git
+  syncStrategy:
+    # 每次查询都重新推断（保证准确性）
+    mode: "always-refresh"
+    
+    # 为什么不用缓存？
+    # - Git 已经有版本控制
+    # - 实时推断保证准确性
+    # - 性能足够（< 1s）
+  
+  # 冲突解决 - 使用 Git
+  conflictResolution:
+    mechanism: "git"  # 使用 Git 的分支/merge 机制
+    
+    # 为什么不用自己的锁？
+    # - Git 分支 = 天然隔离
+    # - Git merge = 冲突检测
+    # - Git 工具 = 冲突解决
+    # - 不需要重复造轮子
+  
+  # Artifact 完成度判定标准
+  artifactStates:
+    proposal:
+      completed:
+        - contains: "## Intent"
+        - contains: "## Scope"
+      drafting:
+        - exists: true
+    
+    specs:
+      completed:
+        - contains: "## Requirements"
+        - contains: "Scenario:"
+      drafting:
+        - exists: true
+    
+    design:
+      completed:
+        - contains: "## Architecture"
+        - contains: "## Technical Approach"
+      drafting:
+        - exists: true
+    
+    tasks:
+      completed:
+        - contains: "- [x]"
+        - allTasksCompleted: true
+      drafting:
+        - exists: true
+
+  # Change 状态推断逻辑（基于 Artifact 状态）
+  changeStatePriority:
+    - state: implementing
+      condition: "tasks == completed"
+      priority: 7
+    
+    - state: tasking
+      condition: "design == completed"
+      priority: 6
+    
+    - state: designing
+      condition: "specs == completed"
+      priority: 5
+    
+    - state: specing
+      condition: "proposal == completed"
+      priority: 4
+    
+    - state: proposing
+      condition: "proposal == drafting"
+      priority: 3
+    
+    - state: idle
+      condition: "no artifacts"
+      priority: 0
+
+  # Project 状态推断逻辑（基于所有 Change 状态）
+  # 重要：completed 不是终态，是"当前无活跃 Change"的临时状态
+  # 项目可以随时从 completed 进入新的开发周期
+  projectStatePriority:
+    - state: completed
+      condition: "all changes archived"
+      description: "当前无活跃 Change，但可能随时开始新周期"
+    
+    - state: reviewing
+      condition: "any change == reviewing"
+    
+    - state: developing
+      condition: "any change >= implementing"
+    
+    - state: planning
+      condition: "any change < implementing"
+      description: "有新 Change 在规划阶段"
+    
+    - state: idle
+      condition: "no changes"
+      description: "项目尚未启动"
+
+# ============================================
+# 下一步引导规则
+# ============================================
+
+nextStepRules:
+  # 规则 1: 新项目启动
+  - id: new-project
+    name: "新项目启动引导"
+    when:
+      project.state: idle
+      changesCount: 0
+    suggest:
+      - "📋 尚未创建任何 Change"
+      - ""
+      - "建议操作："
+      - "  1. 描述你的需求，AI 会帮你创建 Change"
+      - "  2. 或使用命令：/opsx:propose 创建第一个变更提案"
+      - ""
+      - "💡 提示：Change 是 OpenSpec 的核心概念，包含提案、规范、设计和任务"
+    priority: 100
+
+  # 规则 1.7: 已完成项目开始新周期
+  - id: completed-project-new-cycle
+    name: "已完成项目新周期引导"
+    when:
+      project.state: completed
+      userIntent:
+        - "调整功能"
+        - "新功能"
+        - "新需求"
+        - "v2.0"
+        - "下一个版本"
+        - "继续开发"
+    suggest:
+      - "📦 当前状态：已完成（所有 Change 已归档）"
+      - ""
+      - "检测到你要开始新的开发周期！"
+      - ""
+      - "项目生命周期："
+      - "  v1.0: ✅ 已完成并归档"
+      - "  v1.1: 🚀 新周期开始"
+      - ""
+      - "建议操作："
+      - "  1. 创建新 Change：/opsx:propose <新功能名称>"
+      - "  2. 项目状态将自动变为：planning → developing"
+      - "  3. 完成后再次归档，项目回到 completed"
+      - ""
+      - "💡 提示：completed 只是临时状态，项目可以随时开始新周期"
+    priority: 93
+
+  # 规则 2: 架构调整回退
+  - id: architecture-adjustment
+    name: "架构调整回退引导"
+    when:
+      change.state: implementing
+      userIntent:
+        - "架构调整"
+        - "需求变更"
+        - "重新设计"
+        - "方案不对"
+        - "需要回退"
+    suggest:
+      - "⚠️ 检测到需要调整架构/需求"
+      - ""
+      - "当前状态：{changeName} 处于 implementing 阶段"
+      - ""
+      - "回退建议："
+      - "  1. 更新技术设计：/opsx:continue {changeName} design"
+      - "     → 影响：tasks.md 需要相应更新"
+      - ""
+      - "  2. 修改需求规范：/opsx:continue {changeName} specs"
+      - "     → 影响：design.md 和 tasks.md 都需要更新"
+      - ""
+      - "  3. 重大方向调整：考虑创建新 Change"
+      - "     → 归档当前 Change，重新开始"
+      - ""
+      - "💡 提示：OpenSpec 支持非线性工作流，可以随时回退更新任何 Artifact"
+    priority: 90
+
+  # 规则 3: 多 Change 并行
+  - id: multi-change-parallel
+    name: "多 Change 并行引导"
+    when:
+      project.state: developing
+      changesCount: "> 1"
+    suggest:
+      - "📊 当前有 {changesCount} 个 Change 并行开发："
+      - ""
+      - "{changeList}"
+      - ""
+      - "建议策略："
+      - "  1. 优先推进最接近完成的 Change（减少上下文切换）"
+      - "  2. 阻塞的 Change 可以先放一放，稍后集中处理"
+      - "  3. 避免同时在多个 Change 间频繁切换"
+      - ""
+      - "💡 提示：使用 /status {changeName} 查看单个 Change 详情"
+    priority: 80
+
+  # 规则 4: 单 Change 正常推进
+  - id: single-change-progress
+    name: "单 Change 正常推进引导"
+    when:
+      changesCount: 1
+      change.state: "< archived"
+    suggest:
+      - "📋 Change 状态：{changeName}"
+      - "   当前阶段：{changeState}"
+      - ""
+      - "Artifact 进度："
+      - "  {artifactProgress}"
+      - ""
+      - "下一步建议："
+      - "  {nextAction}"
+    priority: 70
+
+  # 规则 5: 任务完成引导
+  - id: task-completed
+    name: "任务完成引导"
+    when:
+      event: "task marked complete"
+      change.state: implementing
+    suggest:
+      - "✅ 任务已完成：{taskName}"
+      - ""
+      - "进度：{completedCount}/{totalCount}"
+      - ""
+      - "下一个任务：{nextTask}"
+      - ""
+      - "继续实施：/opsx:apply {changeName}"
+    priority: 60
+
+  # 规则 6: 阻塞检测
+  - id: blockage-detection
+    name: "阻塞检测与预警"
+    when:
+      change.state: implementing
+      lastActivity: "> 2 days"
+      taskCompletion: "< 50%"
+    suggest:
+      - "⚠️ 检测到可能的阻塞"
+      - ""
+      - "Change：{changeName}"
+      - "最后活动：{lastActivityDate}"
+      - "任务进度：{taskProgress}"
+      - ""
+      - "是否需要协助？"
+      - "  1. 描述遇到的问题"
+      - "  2. 使用 /unblock 报告阻塞"
+      - "  3. 考虑调整方案或寻求帮助"
+    priority: 50
+
+  # 规则 7: Change 完成引导
+  - id: change-ready-archive
+    name: "Change 完成归档引导"
+    when:
+      change.state: implementing
+      taskCompletion: "100%"
+      testsPassed: true
+    suggest:
+      - "🎉 Change 实施完成！"
+      - ""
+      - "Change：{changeName}"
+      - "任务进度：{completedCount}/{totalCount} ✅"
+      - ""
+      - "归档前检查："
+      - "  - [ ] 所有测试通过"
+      - "  - [ ] 代码审查通过"
+      - "  - [ ] 文档已更新"
+      - ""
+      - "归档命令：/opsx:archive {changeName}"
+    priority: 40
+
+# ============================================
+# 状态回退规则
+# ============================================
+
+rollbackRules:
+  # 回退影响分析
+  - fromState: implementing
+    toState: designing
+    affectedArtifacts:
+      - "tasks.md（需要更新）"
+    suggestion: "更新 design.md 后，同步更新 tasks.md"
+
+  - fromState: implementing
+    toState: specing
+    affectedArtifacts:
+      - "design.md（需要更新）"
+      - "tasks.md（需要更新）"
+    suggestion: "更新 specs 后，依次更新 design.md 和 tasks.md"
+
+  - fromState: designing
+    toState: proposing
+    affectedArtifacts:
+      - "specs/（需要更新）"
+      - "design.md（需要更新）"
+      - "tasks.md（需要更新）"
+    suggestion: "重大方向调整，建议创建新 Change"
+
+# ============================================
+# 输出格式模板
+# ============================================
+
+outputTemplates:
+  # 状态概览模板
+  statusOverview: |
+    📊 项目状态概览
+    
+    Project: {projectState}（{activeChanges} 个 Change 活跃）
+    
+    Change 状态:
+    {changeDetails}
+    
+    💡 建议操作:
+    {suggestedActions}
+
+  # 单个 Change 详情模板
+  changeDetail: |
+    📋 Change: {changeName}
+    状态：{changeState}
+    分支：{branch}
+    
+    Artifact 进度:
+      {artifactStatus}
+    
+    下一步：{nextStep}
+
+  # 多 Change 列表模板
+  changeList: |
+    {icon} {changeName:20} {changeState:15} (分支: {branch})
+       ├─ proposal:   {proposalStatus}
+       ├─ specs:      {specsStatus}
+       ├─ design:     {designStatus}
+       └─ tasks:      {tasksStatus}

@@ -1,0 +1,56 @@
+#!/bin/bash
+# Git pre-commit Hook: 代码质量检查
+# 
+# 安装方式:
+#   cp templates/git-hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+
+set -e
+
+echo "🔍 运行 pre-commit 检查..."
+
+# 1. 检查是否包含敏感信息
+echo "  → 检查敏感信息..."
+if git diff --cached | grep -Eq '(password|secret|token|api_key)\s*[:=]\s*["\x27][^"\x27]+["\x27]'; then
+  echo "❌ 检测到可能的敏感信息（password/secret/token/api_key）"
+  echo "   请使用环境变量或配置文件，不要硬编码"
+  exit 1
+fi
+
+# 2. 检查是否包含调试代码
+echo "  → 检查调试代码..."
+debug_patterns="console\.log\(|debugger;|print\(.*debug|\.only\s*\(}"
+if git diff --cached --name-only | grep -Eq '\.(ts|js|py)$'; then
+  if git diff --cached | grep -Eq "$debug_patterns"; then
+    echo "⚠️  警告: 检测到调试代码（console.log/debugger/print）"
+    echo "   请在提交前移除"
+    # 不阻止提交，只是警告
+  fi
+fi
+
+# 3. 检查大文件（> 1MB）
+echo "  → 检查大文件..."
+large_files=$(git diff --cached --name-only | while read file; do
+  if [ -f "$file" ]; then
+    size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+    if [ "$size" -gt 1048576 ]; then
+      echo "$file ($((size / 1024 / 1024))MB)"
+    fi
+  fi
+done)
+
+if [ -n "$large_files" ]; then
+  echo "⚠️  警告: 包含大文件（> 1MB）"
+  echo "$large_files"
+  echo "   考虑使用 Git LFS 或外部存储"
+fi
+
+# 4. 检查是否修改了 .ak47/rules.md（需要 AI 验证）
+echo "  → 检查规则文件变更..."
+if git diff --cached --name-only | grep -q '\.ak47/rules\.md'; then
+  echo "ℹ️  提示: 修改了 .ak47/rules.md"
+  echo "   请确保 AI 已通过 ak47 validate 验证规则"
+fi
+
+echo "✅ Pre-commit 检查通过"
+exit 0

@@ -1,0 +1,28 @@
+#!/bin/bash
+# PostToolUse Hook: 检查是否编写了测试
+# 生成时间: {{generationTime}}
+
+TOOL_INPUT=$(cat)
+FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+
+# 如果写了代码文件（非测试文件）
+if echo "$FILE_PATH" | grep -q '\(ts|js|py|go\)$' && ! echo "$FILE_PATH" | grep -q '\(test|spec\)\.'; then
+  # 检查是否有对应的测试文件
+  TEST_FILE=$(echo "$FILE_PATH" | sed 's/\.ts$/.test.ts/' | sed 's/\.js$/.test.js/')
+  
+  if [ ! -f "$TEST_FILE" ]; then
+    echo "⚠️  偏离强建议：没有编写测试"
+    echo "建议遵循 TDD 流程（RED → GREEN → REFACTOR）"
+    
+    # 记录偏离
+    if [ -d ".ak47" ]; then
+      echo "- timestamp: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> .ak47/deviations.log
+      echo "  deviation: \"没有编写测试直接实现\"" >> .ak47/deviations.log
+      echo "  rule_violated: \"使用 TDD 流程\"" >> .ak47/deviations.log
+      echo "  reason: \"未明确说明\"" >> .ak47/deviations.log
+      echo "  impact: \"medium\"" >> .ak47/deviations.log
+      echo "  user_approval: true" >> .ak47/deviations.log
+      echo "📝 已记录到 .ak47/deviations.log"
+    fi
+  fi
+fi

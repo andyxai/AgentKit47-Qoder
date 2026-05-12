@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# SessionStart Hook for ak47 Skills on Qoder platform
+# 在会话开始时自动加载 ak47-using-skills 内容
+
+set -euo pipefail
+
+# 确定脚本所在目录（.qoder/skills/ak47-using-skills/）
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+# 读取 ak47-using-skills Skill 内容
+USING_SKILLS_FILE="${SCRIPT_DIR}/SKILL.md"
+if [ ! -f "$USING_SKILLS_FILE" ]; then
+  echo "⚠️  警告: 找不到 ak47-using-skills SKILL.md 文件" >&2
+  echo '{"additionalContext": "ak47 using-skills skill not found"}'
+  exit 0
+fi
+
+using_skills_content=$(cat "$USING_SKILLS_FILE" 2>&1)
+
+# 转义字符串用于 JSON 输出
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+using_skills_escaped=$(escape_for_json "$using_skills_content")
+
+# 构建上下文注入内容
+session_context="<EXTREMELY_IMPORTANT>
+你已安装 ak47 技能体系（三层混合架构：ak47 原生 13 个 + OpenSpec 4 个 + Superpowers 保留 11 个）。
+
+**以下是 'ak47-using-skills' Skill 的完整内容 - 这是你使用所有 ak47 Skills 的入门指南。对于其他 Skills，请使用 'Skill' 工具调用：**
+
+${using_skills_escaped}
+
+**会话开始后的第一次响应前，你必须：**
+1. 阅读并理解上述 ak47-using-skills 内容
+2. 在后续任务中主动使用适用的 ak47 Skills
+3. 遵循 1% 规则：有任何可能适用某个 Skill 时都必须调用
+4. 优先级顺序：requirements-grilling → openspec-propose → TDD → 实施 → verification → code-review
+</EXTREMELY_IMPORTANT>"
+
+context_escaped=$(escape_for_json "$session_context")
+
+# 输出 Qoder Hook 格式的 JSON
+# Qoder 支持 additionalContext 字段注入上下文
+printf '{\n  "additionalContext": "%s"\n}\n' "$context_escaped"
+
+exit 0

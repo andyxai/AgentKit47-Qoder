@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output (已加入 Git，避免用户安装时本地构建)
+# dist/
+
+# npm pack 生成的包文件
+*.tgz
+
+# Research Projects (第三方研究资料本地副本)
+research-projects/
+
+# AI Platform Config (AI 平台本地配置，不应提交)
+.aone_copilot/
+.qoder/
+.claude/
+.codex/
+.cursor/
+.opencode/
+
+# Git Worktrees (隔离工作空间)
+.worktrees/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+.ak47/
+PROJECT-INTRO.md

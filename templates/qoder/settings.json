@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.qoder.com/schemas/settings.json",
+  "_comment": "Qoder 官方支持 5 种 Hook 事件：UserPromptSubmit / PreToolUse / PostToolUse / PostToolUseFailure / Stop。脚本统一放在 .qoder/hooks/，以 bash <path> 方式调用，避免权限位依赖。",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/pre-write-spec-check.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/post-code-tdd-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/post-doc-reference-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+#!/bin/bash
+# PreToolUse Hook: 检查是否有对应的 Spec
+# 生成时间: {{generationTime}}
+
+TOOL_INPUT=$(cat)
+FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+
+# 如果是写文件操作，检查是否有 Spec
+if echo "$FILE_PATH" | grep -q '\.'; then
+  if ! ls openspec/changes/*/spec.md 1>/dev/null 2>&1; then
+    echo "❌ 违反硬规则：没有 Spec 不得编写代码"
+    echo "请先创建 Spec：/opsx:propose 或 openspec propose"
+    exit 1
+  fi
+fi

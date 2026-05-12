@@ -1,0 +1,22 @@
+# {{project_name}} PRD 文档索引
+
+> 生成日期: {{date}}
+> 状态: 待填充
+
+## 文档导航
+
+| 文档 | 路径 | 描述 |
+|------|------|------|
+| 项目愿景 | [vision.md](vision.md) | 项目目标、核心价值与成功标准 |
+| 模块索引 | [modules/](modules/) | 各功能模块的 PRD 文档 |
+
+## 快速开始
+
+1. 先填写 [vision.md](vision.md) 明确项目愿景
+2. 再按模块拆分，在 `modules/` 下为每个模块创建 PRD
+3. 每个模块 PRD 可参考 [module.md](module.md) 模板
+
+## 相关文档
+
+- [架构设计](../architecture/_index.md)
+- [AGENTS.md](../../AGENTS.md)

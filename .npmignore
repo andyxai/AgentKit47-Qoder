@@ -1,0 +1,28 @@
+# 源码（不需要，已有 dist/）
+src/
+tests/
+
+# 开发配置
+.eslintrc*
+eslint.config.js
+.prettierrc
+tsconfig.json
+vitest.config.ts
+
+# 文档（保留必要的）
+docs/
+examples/
+research-projects/
+scripts/
+
+# 保留 templates/ 和 README.md, CHANGELOG.md, LICENSE
+
+# Git
+.git/
+.gitignore
+.gitlab-ci.yml
+
+# 其他
+.env*
+*.log
+node_modules/

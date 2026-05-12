@@ -1,0 +1,86 @@
+#!/bin/bash
+# Git commit-msg Hook: 验证 Commit Message 是否符合 Conventional Commits 规范
+#
+# AK47 生成的项目默认使用中文，commit description 必须为中文。
+# type/scope 因遵循 Conventional Commits 标准保持英文。
+
+set -e
+
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# 移除注释行
+commit_msg=$(echo "$commit_msg" | grep -v '^#' | head -1)
+
+# ============================================================
+# 1. Conventional Commits 格式检查
+# ============================================================
+# type(scope) 必须为英文（Conventional Commits 标准）
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?: .+$"
+
+if ! echo "$commit_msg" | grep -Eq "$pattern"; then
+  echo ""
+  echo "❌ Commit Message 格式错误"
+  echo ""
+  echo "当前消息: $commit_msg"
+  echo ""
+  echo "必须符合 Conventional Commits 规范:"
+  echo "  <type>(<scope>): <中文描述>"
+  echo ""
+  echo "允许的 type:"
+  echo "  feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+  echo ""
+  echo "示例:"
+  echo "  ✅ feat(cli): 新增项目初始化命令"
+  echo "  ✅ fix(core): 修复模板渲染边界情况"
+  echo "  ✅ docs: 更新 README 安装说明"
+  echo ""
+  echo "❌ 不好的示例:"
+  echo "  ❌ update code              # 太笼统"
+  echo "  ❌ fix bug                  # 没有上下文"
+  echo "  ❌ feat(cli): add init cmd  # 描述应为中文"
+  echo ""
+  exit 1
+fi
+
+# 提取 description 部分
+description=$(echo "$commit_msg" | sed -E 's/^[a-z]+(\([a-z0-9-]+\))?: //')
+
+# ============================================================
+# 2. 中文描述检查
+# ============================================================
+if ! echo "$description" | perl -CS -ne 'print if /[\x{4e00}-\x{9fff}\x{3400}-\x{4dbf}]/' | grep -q .; then
+  echo ""
+  echo "❌ description 必须使用中文"
+  echo ""
+  echo "AK47 生成的项目默认使用中文，commit description 应为中文。"
+  echo "type/scope 保持英文（Conventional Commits 标准）。"
+  echo ""
+  echo "当前消息: $commit_msg"
+  echo ""
+  echo "正确格式: type(scope): 中文描述"
+  echo "示例: feat(cli): 新增项目初始化命令"
+  echo ""
+  exit 1
+fi
+
+# ============================================================
+# 3. 长度检查
+# ============================================================
+if [ ${#description} -gt 72 ]; then
+  echo ""
+  echo "⚠️  警告: description 长度为 ${#description} 字符，建议不超过 72 字符"
+  echo ""
+fi
+
+# ============================================================
+# 4. 句号检查
+# ============================================================
+if echo "$description" | grep -Eq '[。.]$'; then
+  echo ""
+  echo "⚠️  警告: description 不应以句号结尾"
+  echo ""
+fi
+
+echo "✅ Commit Message 格式正确: $commit_msg"
+exit 0
