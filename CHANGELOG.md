@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.5] - 2026-05-12
+
+### 📝 文档
+
+- **学习文档语气调整**
+  - 04-agent-task-delegation.md：去除个人踩坑叙事，改为中性表述
+  - 08-brief-design-methodology.md：去除"最初就让AI开工""反复踩坑"等表述
+  - 05-requirements-double-guarantee.md："早期问题"改为"背景问题"
+  - index.md：模块格式说明中"踩坑经历"改为"实践经历"
+  - 09-knowledge-ai-management.md："踩坑记录"改为"实践记录"
+  - 10-architectural-decision-evolution.md："常见问题...才发现"改为"初始版本...需要调整"
+
 ## [0.6.4] - 2026-05-12
 
 ### 📝 文档
