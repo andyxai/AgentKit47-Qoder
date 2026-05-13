@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.6] - 2026-05-13
+
+### 🛠️ 模板优化
+
+- **workflow-state.md**
+  - 新增「Spec 审查门禁」章节，规定 artifacts complete 后必须经过批判性审查才能 apply
+
+- **apply.md**
+  - 移除「深层模块检查」，避免与 ak47-skill-anti-patterns 和 code-review 重复
+
+- **skills/**
+  - 移除 4 个 openspec skill 目录（openspec-apply-change、openspec-archive-change、openspec-explore、openspec-propose）
+  - 这些 skills 由 `openspec init` 命令自动生成，不需要放在模板中
+
 ## [0.6.5] - 2026-05-12
 
 ### 📝 文档

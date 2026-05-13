@@ -191,3 +191,20 @@ Change 状态:
 - ❌ 认为 `completed` 是终态
 - ❌ 不创建 Change 直接修改代码
 - ❌ 累积多个版本的任务不清零
+
+---
+
+## Spec 审查门禁
+
+**触发条件**: 任一 OpenSpec Change 的所有 artifacts（proposal / design / specs / tasks）全部完成（`openspec status` 显示 "All artifacts complete"）。
+
+**强制流程**:
+1. 调用 `ak47-skill-critical-review` 或委托 `ak47-agent-reviewer` 对当前 Change 的 specs 和 design 做批判性审核
+2. 审核报告产出后，向用户呈现审查结论（致命/重大/建议），等待用户决策
+3. 若存在致命问题 → 修正后重新审查，不放行
+4. 用户显式批准后 → 方可进入 apply 阶段
+
+**禁止行为**:
+- ❌ artifacts complete 后直接 apply
+- ❌ 跳过审查自认为 spec 没问题
+- ❌ 审核结论未经用户确认就自行处理致命问题

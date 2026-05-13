@@ -66,18 +66,12 @@ Implement tasks from an OpenSpec change.
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
-   - **深层模块检查**（当创建新模块/接口时）：
-     - [ ] 接口方法数 ≤ 5 个
-     - [ ] 深度比 ≥ 10:1（内部逻辑:接口方法）
-     - [ ] 调用者只需了解少量接口
-     - [ ] 相关逻辑集中在模块内部
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
    - Continue to next task
 
-   **暂停条件**：
+   **Pause if:**
    - Task is unclear → ask for clarification
    - Implementation reveals a design issue → suggest updating artifacts
-   - **深层模块检查失败** → 重构后再继续
    - Error or blocker encountered → report and wait for guidance
    - User interrupts
 
