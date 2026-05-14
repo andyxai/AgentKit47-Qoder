@@ -11,22 +11,22 @@
 ## 📌 快速索引
 
 ### 核心规则(每次必遵守)
-- 💬 反馈行为准则 → 第 124 行
-- 🔴 1% 规则 → 第 593 行
-- 🚦 Hook 警告必须响应 → 第 720 行
-- 🚫 禁止跳过 TDD → 第 736 行
-- 🚫 禁止臆想 API → 第 706 行
-- 🚫 禁止过度设计 → 第 722 行
-- 🚫 禁止表面修复 → 第 741 行
+- 💬 反馈行为准则 → 第 166 行
+- 🔴 1% 规则 → 第 117 行
+- 🚦 Hook 警告必须响应 → 第 691 行
+- 🚫 禁止跳过 TDD → 第 682 行
+- 🚫 禁止臆想 API → 第 653 行
+- 🚫 禁止过度设计 → 第 669 行
+- 🚫 禁止表面修复 → 第 700 行
 
 ### 场景化规则(按需查阅)
 | 场景 | 章节 | 行号 |
 |------|------|------|
-| Git 分支操作 | Git 工作流规则 | 223-313 |
-| OpenSpec 状态管理 | 工作流状态管理 | 317-598 |
-| Agent 分工决策 | Agent 分工原则 | 88-122 |
-| 知识沉淀 | 知识沉淀规则 | 611-666 |
-| 记忆管理 | 记忆管理规则 | 669-691 |
+| Git 分支操作 | Git 工作流规则 | 216-289 |
+| OpenSpec 状态管理 | 工作流状态管理 | 291-514 |
+| Agent 分工决策 | Agent 分工原则 | 130-165 |
+| 知识沉淀 | 知识沉淀规则 | 568-625 |
+| 记忆管理 | 记忆管理规则 | 626-648 |
 
 ---
 
@@ -89,30 +89,19 @@
 - **ak47-skill-improvement-proposal** - 改进提案:深度诊断 AK47 行为问题，产出结构化改进建议，区分普适性缺陷与项目特有问题
 - **ak47-skill-improvement-audit** - 改进审核:审核改进提案，交叉判断 AK47 设计原则与用户项目诉求的合理性
 
-### ak47 改造的 Superpowers Skills
-
-以下 Skills 基于 mattpocock-skills 改造,已更名为 ak47-*:
+### 工程实践 Skills
 
 - **ak47-skill-test-driven-development** - TDD:融合垂直切片+行为测试+用户确认循环
-- **ak47-skill-systematic-debugging** - 系统调试:6 阶段调试循环 (v0.3.0)
+- **ak47-skill-systematic-debugging** - 系统调试:6 阶段调试循环
 - **ak47-skill-writing-plans** - 编写计划:融入 triage-brief 流程
 - **ak47-skill-executing-plans** - 执行计划:流程集成 (TODO→IN_PROGRESS→DONE)
 - **ak47-skill-writing-skills** - 编写Skill:创建/编辑 Skill 文档
 
-### ✅ Superpowers 完全融合
-
-所有 Superpowers Skills 已完全融合到 ak47 体系,无保留原版。
-
-> **注意**: 
-> - TDD 已升级为 `ak47-skill-test-driven-development` (融合 mattpocock 垂直切片理念)
-> - Code Review 已使用 `ak47-skill-code-review` 替代 Superpowers 原版。
-> - Git 工作流已升级为 `ak47-skill-using-git-worktrees` 和 `ak47-skill-finishing-a-development-branch`
-> 
 > **完整列表**: 通过调用 `ak47-using-skills` 了解完整的 27 个 Skills 体系和使用方法。
 
 ---
 
-## 🚀 Superpowers 使用规则
+## 🛠️ Skill 使用原则
 
 ### 会话启动时
 
@@ -560,9 +549,9 @@ Change 状态:
 ├── agents/              # Qoder Agent 配置
 ├── skills/              # Qoder Skill 配置
 │   ├── ak47-core/       # ak47 核心 Skills（6个）
-│   ├── engineering/     # Superpowers Engineering Skills
-│   ├── productivity/    # Superpowers Productivity Skills
-│   ├── misc/            # Superpowers Misc Skills
+│   ├── engineering/     # 工程实践 Skills
+│   ├── productivity/    # 效率工具 Skills
+│   ├── misc/            # 辅助 Skills
 │   └── openspec/        # OpenSpec Skills
 ├── commands/            # Qoder 命令
 └── settings.json        # Hook 配置
@@ -575,24 +564,6 @@ openspec/                # OpenSpec 规范
 ---
 
 ## ⚠️ 强制规则
-
-### 1% 规则
-
-**如果有 1% 可能某个 Skill 适用，你必须调用它。**
-
-这不是协商的，不是可选的，你不能理性化跳过。
-
-### 清单规则
-
-**如果 Skill 有 checklist，必须创建 TodoWrite 任务。**
-
-按清单逐项执行，不能跳过任何项。
-
-### 执行规则
-
-**调用 Skill 后，必须按 Skill 指示执行。**
-
----
 
 ### 知识沉淀规则（按场景分流）
 

@@ -26,14 +26,13 @@
 - `ak47-skill-change-classification` → [../ak47-core/ak47-skill-change-classification.md](../ak47-core/ak47-skill-change-classification.md)
 - `ak47-skill-harness-design` → [../ak47-core/ak47-skill-harness-design.md](../ak47-core/ak47-skill-harness-design.md)
 
-### Superpowers Skills
+### 工程实践 Skills
 
 | Skill | 描述 | 触发场景 |
 |-------|------|---------|
-| [superpowers-test-driven-development](superpowers-test-driven-development/SKILL.md) | TDD - 测试驱动开发 | 实施任何功能或错误修复之前 |
-| [superpowers-systematic-debugging](superpowers-systematic-debugging/SKILL.md) | 系统调试 - 根因追踪和修复 | 遇到任何错误、测试失败 |
-| [superpowers-writing-skills](superpowers-writing-skills/SKILL.md) | 编写技能 - 创建/编辑 Skill 文档 | 创建新 Skill、编辑现有 Skill |
-| [superpowers-verification-before-completion](superpowers-verification-before-completion/SKILL.md) | 完成前验证 - 运行验证命令 | 声明工作完成、修复或通过之前 |
+| [ak47-skill-test-driven-development](ak47-skill-test-driven-development/SKILL.md) | TDD - 测试驱动开发 | 实施任何功能或错误修复之前 |
+| [ak47-skill-systematic-debugging](ak47-skill-systematic-debugging/SKILL.md) | 系统调试 - 根因追踪和修复 | 遇到任何错误、测试失败 |
+| [ak47-skill-writing-skills](ak47-skill-writing-skills/SKILL.md) | 编写技能 - 创建/编辑 Skill 文档 | 创建新 Skill、编辑现有 Skill |
 
 ---
 

@@ -2,11 +2,11 @@
 # CLI 模块规则
 
 > **适用范围**：`src/cli/` 目录下的所有文件
-> **优先级**：🔴 硬规则 - 必须遵守
+> **优先级**：硬规则 - 必须遵守
 
 ---
 
-## 🔴 命令结构
+## 命令结构
 
 ### 文件组织
 - 每个命令必须是独立的 TypeScript 文件
@@ -22,7 +22,7 @@ export default async function handler(args: CommandArgs): Promise<void> {
 
 ---
 
-## 🔴 参数约定
+## 参数约定
 
 ### 参数格式
 - 必需参数使用 `<angle-brackets>`：`<project-name>`
@@ -44,35 +44,33 @@ ak47 validate --spec <spec-file> --verbose
 
 ---
 
-## 🔴 错误处理
+## 错误处理
 
 ### 错误分类
 
-| 错误类型 | 处理方式 | 退出码 |
-|---------|---------|--------|
-| 用户错误 | 友好提示 + 使用建议 | `process.exit(1)` |
-| 系统错误 | 抛出异常 + 堆栈跟踪 | 自动 |
-| 验证失败 | 列出所有错误（非首个即停） | `process.exit(1)` |
+- 用户错误：友好提示 + 使用建议，退出码 `process.exit(1)`
+- 系统错误：抛出异常 + 堆栈跟踪，退出码 自动
+- 验证失败：列出所有错误（非首个即停），退出码 `process.exit(1)`
 
 ### 错误信息格式
 ```
-❌ 错误：缺少必需参数 <project-name>
+[错误] 缺少必需参数 <project-name>
 
-💡 用法：ak47 init <project-name> [options]
+[用法] ak47 init <project-name> [options]
 
-📖 详细信息：
+[详细信息]：
    - <project-name>：项目名称（必填）
    - [output-dir]：输出目录（可选，默认为当前目录）
 
-🔗 文档：https://docs.ak47.dev/cli/init
+[文档]：https://docs.ak47.dev/cli/init
 ```
 
 ---
 
-## 🟡 输出规范
+## 输出规范
 
 ### 成功输出
-- 使用 emoji 标记状态：✅ 成功、⚠️ 警告、ℹ️ 信息
+- 使用文字标记状态：成功、警告、信息
 - 提供下一步操作建议
 
 ### 进度输出
@@ -81,14 +79,14 @@ ak47 validate --spec <spec-file> --verbose
 
 ### 示例
 ```bash
-✅ 项目初始化完成
+[成功] 项目初始化完成
 
-📁 创建的文件：
+[文件] 创建的文件：
   - AGENTS.md
   - .ak47/config.yaml
   - templates/
 
-💡 下一步：
+[提示] 下一步：
   1. 编辑 .ak47/config.yaml 配置项目
   2. 运行 ak47 validate 验证配置
   3. 开始创建你的第一个 Spec
@@ -96,7 +94,7 @@ ak47 validate --spec <spec-file> --verbose
 
 ---
 
-## 🟡 配置读取
+## 配置读取
 
 ### 配置文件优先级
 1. 命令行参数（最高优先级）
@@ -111,7 +109,7 @@ ak47 validate --spec <spec-file> --verbose
 
 ---
 
-## 🟢 测试要求
+## 测试要求
 
 ### 单元测试
 - 每个命令必须有对应的测试文件

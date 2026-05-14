@@ -63,9 +63,9 @@ Change 状态:
    - 更新 proposal：`/opsx:continue <change> proposal`
 
 **禁止行为**:
-- ❌ silently 回退而不告知用户影响
-- ❌ 跳过下游 Artifact 更新
-- ❌ 在重大方向调整时建议修改原 Change（应创建新 Change）
+- 禁止：silently 回退而不告知用户影响
+- 禁止：跳过下游 Artifact 更新
+- 禁止：在重大方向调整时建议修改原 Change（应创建新 Change）
 
 ---
 
@@ -77,16 +77,16 @@ Change 状态:
 3. 不自己实现锁（Git 已提供完整方案）
 
 **禁止行为**:
-- ❌ 在 master/main 分支直接编辑 Change（应用 `feat/` 分支）
-- ❌ 跳过 Git 提交（频繁提交保持历史清晰）
-- ❌ 手动修改 `workflow-state.yaml` 的状态字段
-- ❌ 自己实现锁机制
+- 禁止：在 master/main 分支直接编辑 Change（应用 `feat/` 分支）
+- 禁止：跳过 Git 提交（频繁提交保持历史清晰）
+- 禁止：手动修改 `workflow-state.yaml` 的状态字段
+- 禁止：自己实现锁机制
 
 **最佳实践**:
-- ✅ 每个 Change 一个 Git 分支
-- ✅ 完成一个阶段就提交
-- ✅ 冲突时用 Git 标准流程解决
-- ✅ 归档时合并到 main 分支
+- 每个 Change 一个 Git 分支
+- 完成一个阶段就提交
+- 冲突时用 Git 标准流程解决
+- 归档时合并到 main 分支
 
 ---
 
@@ -103,9 +103,9 @@ Change 状态:
 3. 等待用户显式批准
 
 **禁止行为**:
-- ❌ 自行判断"改动小不需要审查"
-- ❌ 自行扫描修复后直接放行（即使发现并修复了问题也不替代审查）
-- ❌ 静默跳过（至少记录偏离到 deviations.log）
+- 禁止：自行判断"改动小不需要审查"
+- 禁止：自行扫描修复后直接放行（即使发现并修复了问题也不替代审查）
+- 禁止：静默跳过（至少记录偏离到 deviations.log）
 
 **标准路线**: 修改 artifact → Hook 警告 → 增量审查 → 用户批准 → 继续
 
@@ -132,7 +132,7 @@ Change 状态:
 ```
 📊 当前有 {count} 个 Change 并行开发：
 
-  ✅ change-A    implementing  (进度: 6/8 tasks)
+  - change-A    implementing  (进度: 6/8 tasks)
   🔄 change-B    specing       (等待需求明确)
   ⏳ change-C    proposing     (等待评审)
 
@@ -202,10 +202,10 @@ For each Task 组:
 
 ### 禁止行为
 
-- ❌ 严格按 tasks.md 编号顺序执行（先实现后测试）
-- ❌ 将测试跳到最后统一补写
-- ❌ 以"配置文件不需要测试"为借口跳过 TDD
-- ❌ apply 阶段加载 openspec-apply-change 后未检查 TDD Skill 是否已加载
+- 禁止：严格按 tasks.md 编号顺序执行（先实现后测试）
+- 禁止：将测试跳到最后统一补写
+- 禁止：以"配置文件不需要测试"为借口跳过 TDD
+- 禁止：apply 阶段加载 openspec-apply-change 后未检查 TDD Skill 是否已加载
 
 ### 正确做法
 
@@ -231,10 +231,10 @@ tasks.md 全部完成后，评估以下指标（任一即触发）：
 > **配套**: `post-tasks-completed-check.sh` Hook + `.ak47/workflow-rules.yaml` `brief-generation-gate`
 
 **禁止行为**:
-- ❌ AI 自行判断"不需要 Brief"直接跳过
-- ❌ 跳过 Brief 不提示用户
-- ❌ 跳过 Brief 不记录偏离
-- ❌ 以"改动简单"为借口跳过（需用户确认）
+- 禁止：AI 自行判断"不需要 Brief"直接跳过
+- 禁止：跳过 Brief 不提示用户
+- 禁止：跳过 Brief 不记录偏离
+- 禁止：以"改动简单"为借口跳过（需用户确认）
 
 **正确做法**:
 > "当前变更符合 Brief 生成条件（task 数 > 10 / 跨模块 ≥ 2 / 文件数 > 3）。正在调用 ak47-skill-triage-brief 生成 Agent Brief…"
@@ -284,10 +284,10 @@ tasks.md 全部完成
 
 ### 禁止行为
 
-- ❌ 复杂变更跳过 Brief 直接进入 critical-review
-- ❌ 跳过 Brief 不提示用户
-- ❌ 跳过 Brief 不记录偏离
-- ❌ AI 自行判断"不需要 Brief"直接跳过（新增 2026-05-14）
+- 禁止：复杂变更跳过 Brief 直接进入 critical-review
+- 禁止：跳过 Brief 不提示用户
+- 禁止：跳过 Brief 不记录偏离
+- 禁止：AI 自行判断"不需要 Brief"直接跳过（新增 2026-05-14）
 
 ---
 
@@ -304,9 +304,9 @@ tasks.md 全部完成
 **策略 3: 混合模式** — 已规范模块放 `openspec/specs/`，待规范模块放 `openspec/legacy/`，并创建 `legacy/migration-plan.md`。
 
 **禁止行为**:
-- ❌ 强制老项目一次性完整迁移
-- ❌ 迁移期间停止新功能开发
-- ❌ 忽略迁移进度追踪
+- 禁止：强制老项目一次性完整迁移
+- 禁止：迁移期间停止新功能开发
+- 禁止：忽略迁移进度追踪
 
 ---
 
@@ -326,9 +326,9 @@ tasks.md 全部完成
 **重要**: `completed` 不是终态，而是"当前无活跃工作"的临时状态。项目可无限次从 `completed` 进入新周期。
 
 **禁止行为**:
-- ❌ 认为 `completed` 是终态
-- ❌ 不创建 Change 直接修改代码
-- ❌ 累积多个版本的任务不清零
+- 禁止：认为 `completed` 是终态
+- 禁止：不创建 Change 直接修改代码
+- 禁止：累积多个版本的任务不清零
 
 ---
 

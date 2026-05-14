@@ -24,7 +24,7 @@ const version = packageJson.version;
 
 const program = new Command();
 
-program.name('ak47').description('AI 工程化脚手架 - 编排 OpenSpec 和 Superpowers').version(version);
+program.name('ak47').description('AI 工程化脚手架 - 集成 OpenSpec 与 27 个工程 Skills').version(version);
 
 // 注册命令
 program.addCommand(initCommand);

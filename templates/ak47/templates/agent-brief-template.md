@@ -35,9 +35,9 @@ bug | enhancement
 - [ ] 所有现有测试通过
 
 ## Out of scope
-- ❌ 不会修改的部分
-- ❌ 不会添加的功能
-- ❌ 明确排除的场景
+- 不会修改的部分
+- 不会添加的功能
+- 明确排除的场景
 
 ## Implementation hints
 <可选：技术建议、参考文件、注意事项>
@@ -65,15 +65,15 @@ bug | enhancement
 ### 1. 何时生成 Brief
 
 **必须生成 Brief 的场景**：
-- ✅ 需求盘问完成后（requirements-grilling）
-- ✅ 复杂功能开发前（> 2 小时工作量）
-- ✅ 跨模块修改
-- ✅ 涉及多个文件
+- 需求盘问完成后（requirements-grilling）
+- 复杂功能开发前（> 2 小时工作量）
+- 跨模块修改
+- 涉及多个文件
 
 **可选生成 Brief 的场景**：
-- ⚪ 简单 bug 修复（< 30 分钟）
-- ⚪ 单文件修改
-- ⚪ 文档更新
+- 简单 bug 修复（< 30 分钟）
+- 单文件修改
+- 文档更新
 
 ### 2. Brief 质量检查清单
 
@@ -118,9 +118,9 @@ Error: Cannot find template 'components\button.mustache'
 - [ ] 新增跨平台路径测试用例
 
 ## Out of scope
-- ❌ 不会修改模板渲染逻辑
-- ❌ 不会添加新的模板语法
-- ❌ 不会修改 Mustache 引擎
+- 不会修改模板渲染逻辑
+- 不会添加新的模板语法
+- 不会修改 Mustache 引擎
 
 ## Implementation hints
 - 使用 `path.join()` 替代字符串拼接
@@ -171,9 +171,9 @@ enhancement
 - [ ] Hook 脚本在 macOS/Linux 下均能运行
 
 ## Out of scope
-- ❌ 不会强制要求审查
-- ❌ 不会修改审查逻辑本身
-- ❌ 不会添加 Web UI
+- 不会强制要求审查
+- 不会修改审查逻辑本身
+- 不会添加 Web UI
 
 ## Implementation hints
 - 使用文件时间戳记录最后审查时间
@@ -199,21 +199,23 @@ enhancement
 
 ## 最佳实践
 
-### ✅ DO
+### 最佳实践
 
-1. **明确边界**: Out of scope 比 Acceptance criteria 更重要
-2. **可验证标准**: 每个 Acceptance criteria 都能被测试验证
-3. **引用准确**: Reference files 路径要验证存在
-4. **动机清晰**: Summary 包含为什么要做这个改动
-5. **保持简洁**: Brief 控制在 1 页内（~500 字）
+**必须做到**:
 
-### ❌ DON'T
+1. 明确边界：Out of scope 比 Acceptance criteria 更重要
+2. 可验证标准：每个 Acceptance criteria 都能被测试验证
+3. 引用准确：Reference files 路径要验证存在
+4. 动机清晰：Summary 包含为什么要做这个改动
+5. 保持简洁：Brief 控制在 1 页内（~500 字）
 
-1. **模糊描述**: "提升性能"（❌） → "响应时间 < 200ms"（✅）
-2. **遗漏边界**: 不明确 Out of scope（❌）
-3. **过度详细**: 包含实现细节（应该由 AI 自行决策）
-4. **引用不存在**: Reference files 路径错误
-5. **主观标准**: "用户体验好"（❌） → "操作步骤 ≤ 3 步"（✅）
+**禁止**:
+
+1. 模糊描述："提升性能"（错误）改为"响应时间 < 200ms"（正确）
+2. 遗漏边界：不明确 Out of scope
+3. 过度详细：包含实现细节（应该由 AI 自行决策）
+4. 引用不存在：Reference files 路径错误
+5. 主观标准："用户体验好"（错误）改为"操作步骤 ≤ 3 步"（正确）
 
 ---
 

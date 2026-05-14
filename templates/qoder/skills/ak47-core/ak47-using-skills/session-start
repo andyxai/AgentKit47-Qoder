@@ -33,7 +33,7 @@ using_skills_escaped=$(escape_for_json "$using_skills_content")
 
 # 构建上下文注入内容
 session_context="<EXTREMELY_IMPORTANT>
-你已安装 ak47 技能体系（三层混合架构：ak47 原生 13 个 + OpenSpec 4 个 + Superpowers 保留 11 个）。
+你已安装 ak47 技能体系，共 31 个 Skills（ak47 27 个 + OpenSpec 4 个）。
 
 **以下是 'ak47-using-skills' Skill 的完整内容 - 这是你使用所有 ak47 Skills 的入门指南。对于其他 Skills，请使用 'Skill' 工具调用：**
 

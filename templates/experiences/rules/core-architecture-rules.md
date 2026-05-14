@@ -2,11 +2,11 @@
 # 核心架构规则
 
 > **适用范围**：`src/core/` 目录下的所有文件
-> **优先级**：🔴 硬规则 - 必须遵守
+> **优先级**：硬规则 - 必须遵守
 
 ---
 
-## 🔴 模块分层
+## 模块分层
 
 ### 七层架构（自上而下）
 
@@ -28,12 +28,12 @@ flows/           ← 流程层（工作流定义）
 
 ### 依赖方向
 - **只能向下依赖**：orchestrator → recommender → scanner
-- **禁止向上依赖**：scanner → ❌ orchestrator
-- **禁止横向依赖**：scanner → ❌ generator（通过 orchestrator 协调）
+- 禁止向上依赖：scanner 不能依赖 orchestrator
+- 禁止横向依赖：scanner 不能依赖 generator（通过 orchestrator 协调）
 
 ---
 
-## 🔴 模块职责
+## 模块职责
 
 ### orchestrator（编排层）
 - **职责**：协调整个 ak47 流程，调用其他模块
@@ -67,16 +67,16 @@ flows/           ← 流程层（工作流定义）
 
 ---
 
-## 🔴 接口设计
+## 接口设计
 
 ### 函数签名规范
 ```typescript
-// ✅ 好的接口：明确输入输出
+// 好的接口：明确输入输出
 export function scanProject(rootDir: string): ProjectProfile {
   // 实现
 }
 
-// ❌ 坏的接口：使用 any 或隐式类型
+// 坏的接口：使用 any 或隐式类型
 export function scanProject(rootDir: any): any {
   // 实现
 }
@@ -89,7 +89,7 @@ export function scanProject(rootDir: any): any {
 
 ---
 
-## 🟡 代码组织
+## 代码组织
 
 ### 文件命名
 - 使用 kebab-case：`project-scanner.ts`、`template-renderer.ts`
@@ -116,7 +116,7 @@ import { ScannerError } from './errors';
 
 ---
 
-## 🟡 类型安全
+## 类型安全
 
 ### TypeScript 严格模式
 - 禁止使用 `any` 类型（使用 `unknown` 代替）
@@ -130,7 +130,7 @@ import { ScannerError } from './errors';
 
 ---
 
-## 🟢 性能要求
+## 性能要求
 
 ### 扫描性能
 - 扫描 1000 个文件 < 2 秒

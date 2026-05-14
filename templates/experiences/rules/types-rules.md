@@ -2,11 +2,11 @@
 # 类型定义规则
 
 > **适用范围**：`src/types/` 目录下的所有文件
-> **优先级**：🟡 强建议 - 强烈建议遵循
+> **优先级**：强建议 - 强烈建议遵循
 
 ---
 
-## 🔴 TypeScript 严格模式
+## TypeScript 严格模式
 
 ### 编译器选项
 ```json
@@ -25,12 +25,12 @@
 
 ### 禁止使用 `any`
 ```typescript
-// ❌ 禁止
+// 禁止
 function process(data: any) {
   return data.value;
 }
 
-// ✅ 推荐
+// 推荐
 function process(data: unknown) {
   if (typeof data === 'object' && data !== null && 'value' in data) {
     return (data as { value: string }).value;
@@ -41,7 +41,7 @@ function process(data: unknown) {
 
 ---
 
-## 🔴 类型定义位置
+## 类型定义位置
 
 ### 共享类型 → `src/types/`
 - 跨模块使用的类型
@@ -53,17 +53,17 @@ function process(data: unknown) {
 - 内部实现细节
 
 ### 规则
-- ❌ 不要在多个文件中重复定义相同类型
-- ❌ 不要在业务代码中定义共享类型
-- ✅ 共享类型统一放在 `src/types/`
+- 禁止：在多个文件中重复定义相同类型
+- 禁止：在业务代码中定义共享类型
+- 必须：共享类型统一放在 `src/types/`
 
 ---
 
-## 🟡 类型命名规范
+## 类型命名规范
 
 ### 接口命名
 ```typescript
-// ✅ 好的命名
+// 好的命名
 interface ProjectProfile {
   structure: StructureInfo;
   techStack: TechStackInfo;
@@ -74,7 +74,7 @@ interface ScannerOptions {
   includeHidden: boolean;
 }
 
-// ❌ 坏的命名
+// 坏的命名
 interface Data { }  // 太笼统
 interface Obj { }   // 无意义
 ```
@@ -86,7 +86,7 @@ interface Obj { }   // 无意义
 
 ---
 
-## 🟡 联合类型和类型守卫
+## 联合类型和类型守卫
 
 ### 联合类型
 ```typescript
@@ -97,7 +97,7 @@ type UnitType = 'agent' | 'skill' | 'rule';
 
 ### 类型守卫
 ```typescript
-// ✅ 使用类型守卫
+// 使用类型守卫
 function isAgent(unit: Unit): unit is AgentUnit {
   return unit.type === 'agent';
 }
@@ -112,7 +112,7 @@ function processUnit(unit: Unit) {
 
 ---
 
-## 🟡 泛型使用
+## 泛型使用
 
 ### 何时使用泛型
 - 数据结构（数组、映射）
@@ -121,7 +121,7 @@ function processUnit(unit: Unit) {
 
 ### 示例
 ```typescript
-// ✅ 好的泛型使用
+// 好的泛型使用
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -133,7 +133,7 @@ function validate<T>(data: unknown, schema: Schema<T>): T {
   return data as T;
 }
 
-// ❌ 过度使用泛型
+// 过度使用泛型
 function process<T, U, V, W>(a: T, b: U, c: V): W {
   // 太复杂，应该拆分
 }
@@ -141,7 +141,7 @@ function process<T, U, V, W>(a: T, b: U, c: V): W {
 
 ---
 
-## 🟢 类型导出
+## 类型导出
 
 ###  barrel 导出
 ```typescript
@@ -154,16 +154,16 @@ export * from './plan';
 
 ### 使用方式
 ```typescript
-// ✅ 好的导入
+// 好的导入
 import { ProjectProfile, Config } from '../types';
 
-// ❌ 坏的导入（路径太深）
+// 坏的导入（路径太深）
 import { ProjectProfile } from '../types/project';
 ```
 
 ---
 
-## 🟢 文档注释
+## 文档注释
 
 ### JSDoc 注释
 ```typescript
@@ -198,11 +198,11 @@ export interface ProjectConfig {
 
 ---
 
-## 🟢 类型演进
+## 类型演进
 
 ### 向后兼容
 ```typescript
-// ✅ 添加可选字段（向后兼容）
+// 正确：添加可选字段（向后兼容）
 interface ProjectConfig {
   platform: PlatformType;
   agents: AgentId[];
@@ -210,7 +210,7 @@ interface ProjectConfig {
   experimental?: ExperimentalOptions;
 }
 
-// ❌ 删除必需字段（破坏性变更）
+// 错误：删除必需字段（破坏性变更）
 interface ProjectConfig {
   // platform: PlatformType;  // 删除了！
   agents: AgentId[];

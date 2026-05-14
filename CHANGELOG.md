@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.3] - 2026-05-14
+
+### 优化
+
+- **模板 LLM 友好性优化**：去除所有模板文件中的 emoji 图标和表格格式，改用纯文本标签
+  - 核心规则：core-behavior.md、gate-control.md、workflow-state.md、spec-vertical-slicing.md
+  - 经验规则：cli-rules.md、core-architecture-rules.md、docs-rules.md、test-rules.md、types-rules.md
+  - 模板文件：AGENTS.md、agent-brief-template.md、out-of-scope-template.md
+  - 替换规则：❌→"禁止："，✅→"必须："，🔴🟡🟢→去除，表格→列表格式
+
 ## [0.7.2] - 2026-05-14
 
 ### 🔧 强化
