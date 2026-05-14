@@ -1,6 +1,6 @@
 # Spec 垂直切片规则
 
-> **注入方式**: Qoder 平台自动注入 `.qoder/rules/*.md`。
+> **注入方式**: 需在 Qoder IDE **Settings → Rules** 中配置类型后，Qoder 平台自动注入。核心摘要已内联至 `AGENTS.md`，本文件为完整版可选增强。
 > **定位**: 强制约束 OpenSpec spec 的切分方式，禁止水平切分。
 > **优先级**: 硬规则（每次创建或评审 specs 时必须遵守）。
 

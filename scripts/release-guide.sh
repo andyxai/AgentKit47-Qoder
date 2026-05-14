@@ -120,7 +120,7 @@ echo "$CHANGES"
 echo ""
 echo "  将修改以下文件:"
 echo "    • package.json        — version 字段"
-echo "    • README.md           — version badge"
+echo "    • README.md           — version badge + 版本历史表"
 echo "    • CHANGELOG.md        — 新增版本条目"
 echo ""
 
@@ -168,6 +168,37 @@ fi
 sed "${SED_INPLACE[@]}" "s|version-${CURRENT_VERSION}-|version-${NEW_VERSION}-|g" "${REPO_DIR}/README.md" 2>/dev/null && \
     echo "✓ README.md badge: ${CURRENT_VERSION} → ${NEW_VERSION}" || \
     echo "⚠ README.md badge 未找到匹配，请手动检查"
+
+# 4.2b README.md 版本历史表
+echo ""
+echo "→ 更新 README.md 版本历史表 ..."
+
+# 提取变更摘要（取第一行作为简要描述）
+SUMMARY="$(echo "$CHANGES" | head -1 | sed 's/^- //' | sed 's/^\* //')"
+if [ -z "$SUMMARY" ]; then
+    SUMMARY="<更新摘要>"
+fi
+
+VERSION_ROW="| **${NEW_VERSION}** | ${TODAY} | ${SUMMARY} |"
+
+# 在版本历史表格的 header 分隔行后插入新行
+awk -v row="$VERSION_ROW" '
+    /^\|[-| ]+\|$/ && !inserted && after_header {
+        print
+        print row
+        inserted=1
+        next
+    }
+    /^## 📋 版本历史/ { after_header=1 }
+    { print }
+' "${REPO_DIR}/README.md" > "${REPO_DIR}/README.md.tmp" && \
+    mv "${REPO_DIR}/README.md.tmp" "${REPO_DIR}/README.md"
+
+if grep -q "$NEW_VERSION" "${REPO_DIR}/README.md" 2>/dev/null; then
+    echo "✓ README.md 版本历史表: 新增 v${NEW_VERSION} 条目"
+else
+    echo "⚠ README.md 版本历史表更新失败，请手动添加"
+fi
 
 # 4.3 CHANGELOG.md
 echo ""

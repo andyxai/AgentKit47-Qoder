@@ -371,3 +371,53 @@ outputTemplates:
        ├─ specs:      {specsStatus}
        ├─ design:     {designStatus}
        └─ tasks:      {tasksStatus}
+
+# ===================================
+# 增量修改审查门禁（新增 2026-05-14）
+# ===================================
+# 说明: 本规则由 post-artifact-modification-check Hook 和 workflow-state.md
+#       共同消费。yaml 仅作为规则定义源，不自行触发。
+gateRules:
+  - id: artifact-modification-review-gate
+    name: "受控 Artifact 修改后强制重审"
+    description: |
+      修改已审查通过的 proposal/specs/design/tasks 后，
+      Hook 读取此规则注入警告，Agent 读取此规则执行增量审查。
+    trigger:
+      event: "post-write-artifact"
+      files:
+        - "openspec/changes/**/proposal.md"
+        - "openspec/changes/**/design.md"
+        - "openspec/changes/**/tasks.md"
+        - "openspec/changes/**/specs/**/spec.md"
+    required_actions:
+      - "调用 ak47-skill-critical-review 增量审查"
+      - "呈现审查结论，等待用户显式批准"
+    blocked_until: "user-approved-review"
+    exceptions:
+      - "纯格式修改（不改变语义）"
+      - "typo 修复（< 5 字符）"
+    auto_log_deviation: true
+    priority: 75
+
+  # ===================================
+  # Agent Brief 生成门禁（新增 2026-05-14）
+  # ===================================
+  # 说明: 与 Brief 遗漏问题（brief-skip-incident-report.md）配套
+  - id: brief-generation-gate
+    name: "大型 Change 强制生成 Agent Brief"
+    description: |
+      tasks 全部完成时，检查是否满足 Brief 生成条件。
+      由 post-tasks-completed-check Hook 和 workflow-state.md 共同消费。
+    trigger:
+      event: "tasks-completed"
+      conditions:
+        - "task_count > 10"
+        - "modules_count >= 2"
+        - "file_count > 3"
+      match: "any"
+    required_actions:
+      - "调用 ak47-skill-triage-brief 生成 Agent Brief"
+      - "Brief 生成后继续 critical-review"
+    blocked_until: "brief-generated"
+    priority: 80

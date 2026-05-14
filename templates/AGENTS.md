@@ -4,9 +4,12 @@
 >
 > - **位置**: 项目根目录
 > - **作用**: 指导 AI 如何使用本项目的 Agent、Skill 与工作流
-> - **优先级**: 用户指令 > `.qoder/rules/*.md`（全局注入） > AGENTS.md > 默认行为
-> - **配套规则**:
->   - [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md) — 跨场景硬规则（需求盘问 / 1% 规则 / 禁止臆想 / 禁止表面修复 / 反馈准则）
+> - **优先级**: 用户指令 > AGENTS.md（Qoder 自动加载） > 默认行为
+> - **规则补充**: `.qoder/rules/*.md` 为可选增强层——文件已通过 `ak47 init` 拷入项目，但需在 Qoder IDE **Settings → Rules** 中逐条配置类型（始终生效/指定文件/模型决策）后才生效。未配置时不影响 AGENTS.md 自身的约束力。
+> - **配套规则**（按需配置）:
+>   - [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md) — 跨场景硬规则
+>   - [`.qoder/rules/gate-control.md`](.qoder/rules/gate-control.md) — 人工确认门控点清单
+>   - [`.qoder/rules/spec-vertical-slicing.md`](.qoder/rules/spec-vertical-slicing.md) — Spec 垂直切片约束
 >   - [`.qoder/rules/workflow-state.md`](.qoder/rules/workflow-state.md) — OpenSpec 工作流状态机
 
 ---
@@ -20,6 +23,7 @@
 | Skill 清单 | [🛠️ 可用 Skill](#️-可用-skill) |
 | Agent 分工决策 | [🧭 Agent 分工原则](#-agent-分工原则) |
 | Skills 使用（1% 规则） | [🚀 Skills 使用规则](#-skills-使用规则) |
+| 门控纪律 | [🚪 门控纪律](#-门控纪律) |
 | Git 工作流自动触发 | [🔄 Git 工作流规则](#-git-工作流规则) |
 | OpenSpec 工作流 | [📐 OpenSpec 工作流](#-openspec-工作流) |
 | 知识沉淀 | [📚 知识沉淀规则](#-知识沉淀规则) |
@@ -34,7 +38,7 @@
 **AI 平台**: Qoder
 
 **工具链路径契约**:
-- 全局行为规则: `.qoder/rules/*.md`（Qoder 自动注入）
+- 全局行为规则: `.qoder/rules/*.md`（需在 IDE 配置类型后生效，详见顶部"规则补充"说明）
 - Agent 定义: `.qoder/agents/*.md`
 - Skill 定义: `.qoder/skills/<category>/<name>/SKILL.md`
 - Command 定义: `.qoder/commands/<category>/<name>.md`
@@ -130,13 +134,112 @@
 ### 会话启动时必须执行
 
 1. 加载 `ak47-using-skills` Skill 了解完整 Skills 体系
-2. 遵循 1% 规则（详见 [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md)）
+2. 遵循 1% 规则
 
 > **注意**: Qoder 官方支持的 Hook 事件为 `UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PostToolUseFailure`、`Stop`。**不存在** `SessionStart` 事件，因此会话启动加载依赖 AI 主动执行，不能依赖 Hook 自动触发。
 
 ### 1% 规则（强制）
 
-**如果有 1% 可能某个 Skill 适用，你必须调用它。** 详细规定与禁止跳过清单见 [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md)。
+**如果有 1% 可能某个 Skill 适用，你必须调用它。** 这不是协商的，不是可选的。
+
+以下 Skill 涉及流程纪律，AI **不得**自行判断"不需要"而跳过：
+
+| Skill | 触发场景 | 严禁行为 |
+|-------|----------|----------|
+| `ak47-skill-entry-guard` | 任何用户输入的第一步 | 自判"明显是修改请求"跳过 |
+| `ak47-skill-change-classification` | 准备创建 OpenSpec Change 前 / 编写代码前 | 自判"变更简单不需要分类" |
+| `ak47-skill-triage-brief` | tasks.md 创建完成，且变更规模超过阈值（工作量 > 2h / 跨模块 > 2 / 文件数 > 3 / 接口变更） | 自判"不需要 Brief"直接跳过 |
+| `ak47-skill-test-driven-development` | 编写任何实现代码前 | 自判"功能简单不需要 TDD"跳过；看到 Hook TDD 警告后忽略继续编码 |
+| `ak47-skill-vertical-slicing` | 创建 OpenSpec specs 前 | 自判"功能自然垂直"跳过；默认按组件水平切分 |
+
+**跳过判定规则**: 如果 AI 认为当前场景不需要某个 Skill，必须：1) 明确说明原因；2) 询问用户是否同意跳过；3) 用户同意后才能跳过。
+
+清单规则: Skill 带 checklist 时，必须创建对应的 TodoWrite 任务逐项执行。
+
+---
+
+### Hook 警告必须响应
+
+Qoder Hook 输出的警告（stderr 中的 🔴/🟡 标记）不得忽略。**响应流程**: 停止当前操作 → 加载对应 Skill → 补救 → 继续。
+
+| Hook 类型 | 警告信号 | 必须加载的 Skill | 响应动作 |
+|-----------|---------|-----------------|---------|
+| TDD 偏离 | 代码文件无对应测试文件 | `ak47-skill-test-driven-development` | 停止编码 → 补测试 → 通过后继续 |
+| Artifacts 缺失 | 写代码前 proposal/design/specs/tasks 不齐 | `openspec-propose` 或对应 artifact Skill | 停止编码 → 补齐缺失 artifact → 用户评审通过后继续 |
+| Artifacts 全齐 | proposal/design/specs/tasks 全部完成 | `ak47-skill-critical-review` | 停止推进 → 执行 critical-review → 用户批准后 apply |
+| 缺少代码审查 | Task 完成/提交前无审查记录 | `ak47-skill-code-review` 或委托 `ak47-agent-reviewer` | 停止提交 → 执行代码审查 → 审查通过后继续 |
+| 测试覆盖不足 | 提交前 >30% 源码文件无测试 | `ak47-skill-test-driven-development` | 停止提交 → 补测试 → 覆盖达标后继续 |
+| 文档缺失 | 关键文档未更新 | `ak47-skill-critical-review` | 停止提交 → 补文档 → 审查后继续 |
+
+**禁止**: 看到 Hook 警告后继续操作 / 不加载对应 Skill 自行处理 / 忽略警告继续编码或提交。
+
+---
+
+## 🚪 门控纪律（人工确认断点）
+
+**所有阶段性产出必须通过人工确认门控才能推进到下一阶段。** 用户的一句"继续"只授权当前讨论的继续，不授权跳过任何门控。
+
+### 门控点清单
+
+| # | 门控点 | 触发条件 | 确认问法 |
+|---|--------|----------|----------|
+| G1 | 需求理解确认 | 需求盘问完成 | "需求理解是否正确？是否可以进入变更分类？" |
+| G2 | 变更分类确认 | 变更分类完成 | "当前变更判定为 L{X}，对应流程强度为 {强度}，是否确认？" |
+| G3 | proposal 评审 | `proposal.md` 创建完成 | "proposal 已创建，是否通过评审？" |
+| G4 | design 评审 | `design.md` 创建完成 | "design 已创建，是否通过评审？" |
+| G5 | specs 评审 | `specs/` 创建完成 | "specs 是否按垂直切片组织？是否覆盖所有需求？" |
+| G6 | tasks 评审 | `tasks.md` 创建完成 | "tasks 拆分是否合理？粒度是否合适？" |
+| G7 | 批判性审核 | tasks 评审通过后 | "是否确认进入实施阶段？" |
+| G8 | 代码审查 | 代码编写完成 | "是否启动代码审查？" |
+| G9 | 审查通过 | 代码审查完成 | "审查通过，是否提交代码？" |
+| G10 | 功能验收 | 功能开发完成 | "是否启动验收测试？" |
+| G11 | 分支处理 | 测试通过 | "是否合并分支/创建 PR？" |
+
+### 范式与门控强度
+
+| 门控 | L1（需求驱动） | L2（技术实现） | L3（缺陷修复） |
+|------|:---:|:---:|:---:|
+| G1 需求确认 | ● | ● | ○ 可跳过 |
+| G2 变更分类 | ● | ● | ● |
+| G3 proposal | ● | ● | ○ 可合并到 G2 |
+| G4 design | ● | ● | ○ 可跳过 |
+| G5 specs | ● | ● | ○ 可跳过 |
+| G6 tasks | ● | ● | ● |
+| G7 批判性审核 | ● | ● | ○ 简化审核 |
+| G8-G11 实施/收尾 | ● | ● | ● |
+
+> ● = 必须执行　　　○ = 可选/简化
+
+### 确认格式规范
+
+- ✅ 使用明确询问句式，说明当前状态和下一步
+- ✅ 等待用户明确回复（"通过"/"确认"/"是"/"需要修改"）
+- ✅ 一次只等待一个门控点的确认
+- ❌ 陈述句代替询问（"我继续创建 design 了"）
+- ❌ 假设用户同意（"没问题的话我就继续了"）
+- ❌ 将同一门控点多 artifact 合并询问（"proposal 和 design 都好了，一起通过吗？"）
+
+### 偏离处理
+
+任何门控点如需跳过，必须：
+1. 说明跳过原因（仅限紧急修复/用户明确要求）
+2. 明确告知用户跳过了哪个门控点
+3. 记录到 `.ak47/deviations.log`
+4. 获得用户明确批准后方可跳过
+
+---
+
+### Spec 垂直切片强制规则
+
+**每个 Spec 必须描述一个端到端可独立演示和验证的用户价值路径，禁止按技术组件/层次水平切分。**
+
+- ✅ 按"端到端用户价值"垂直切分：从输入到输出，穿越所有技术层
+- ✅ 每个 spec 描述一个可独立编译、测试、验证的完整行为路径
+- ❌ 按技术组件单独建 spec（如 Fetcher、Extractor、Classifier）
+- ❌ 按技术层次单独建 spec（如 API 层、Service 层、DAO 层）
+- ❌ 按模块/包名单独建 spec（如 pipeline-core、entity-matching）
+
+`ak47-skill-critical-review` 执行时必须检查：每个 Spec 是否描述端到端用户价值？是否按技术组件水平切分？（若是 → 🔴 致命问题，必须重新切分）
 
 ---
 
@@ -195,15 +298,47 @@
 
 ## 📐 OpenSpec 工作流
 
-> **详细状态机**: [`.qoder/rules/workflow-state.md`](.qoder/rules/workflow-state.md)（Qoder 自动注入）
+### 状态三层模型
 
-### 速查
+- **Artifact 状态**: `not-started` / `drafting` / `completed` / `needs-revision`
+- **Change 状态**: `proposing` / `specing` / `designing` / `tasking` / `implementing` / `testing` / `reviewing` / `ready-to-archive` / `archived`
+- **Project 状态**: `idle` / `planning` / `developing` / `reviewing` / `completed`
+
+状态**永远基于最新文件内容实时推断**（`always-refresh`），不依赖缓存。
+
+### 速查命令
 
 - 查询状态：`/status` 或 `/next-step`
 - 创建 Change：`/opsx:propose <name>`
 - 继续某环节：`/opsx:continue <change> <proposal|specs|design|tasks>`
 - 归档：`/opsx:archive <change>`
 - 解除阻塞：`/unblock <change>`
+
+### 状态回退规则
+
+**触发条件**: 用户表示"架构调整"、"需求变更"、"重新设计"、"方案不对"、"需要回退"。
+
+**执行**:
+1. 识别需回退的层级：
+   - 技术设计问题 → 回退到 `designing`
+   - 需求规范问题 → 回退到 `specing`
+   - 方向错误 → 回退到 `proposing` 或创建新 Change
+2. 提示用户影响的下游 Artifact，建议更新顺序：回退层 → 依赖层
+3. 重大方向调整时创建新 Change，不修改原 Change
+
+**禁止**: silently 回退而不告知用户影响 / 跳过下游 Artifact 更新。
+
+### 阻塞检测
+
+会话开始或状态查询时，检查 `implementing` 状态的 Change：
+- 最后活动时间超过 2 天未更新且完成率 < 50% → 主动提示阻塞、询问是否遇到问题、提供 `/unblock` 建议。
+
+### 老项目接入
+
+检测到项目有代码但 `openspec/specs/` 为空时，提供三种策略供用户选择：
+- **策略 1（推荐）**: 增量接入 — 新功能走完整 OpenSpec 流程，老功能暂不处理
+- **策略 2**: 基线快照 — 逆向工程为现有代码创建 Spec 基线
+- **策略 3**: 混合模式 — 已规范模块放 `openspec/specs/`，待规范模块放 `openspec/legacy/`
 
 ### 硬性约束
 
@@ -291,8 +426,10 @@
 │   └── misc/
 ├── commands/            # 自定义命令
 ├── hooks/               # Hook 脚本（shell）
-├── rules/               # 全局注入规则
+├── rules/               # 可选增强规则（需 IDE 手动配置类型后生效）
 │   ├── core-behavior.md
+│   ├── gate-control.md
+│   ├── spec-vertical-slicing.md
 │   └── workflow-state.md
 └── settings.json        # Hook 绑定
 
@@ -329,12 +466,13 @@ openspec/                # OpenSpec 规范
 
 ---
 
-## 🚫 禁止行为速查
+## 🚫 禁止行为
 
-详细清单见 [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md)。核心条目：
-
-1. **禁止臆想 API/配置** — 查阅官方文档，困惑即问
-2. **禁止过度设计** — 只实现用户明确要求的
-3. **禁止表面修复** — 追溯根因，不擦表面
-4. **禁止跳过 Skills** — 1% 可能性即强制调用
-5. **禁止无目标执行** — 定义可验证的成功标准
+1. **禁止臆想 API/配置** — 不要假设、不要隐藏困惑。不确定就问。查阅官方文档，新建文档标注来源。
+2. **禁止过度设计** — 只实现用户明确要求的功能，不为一次性代码创建抽象，不添加未要求的"灵活性"。
+3. **禁止表面修复** — 追溯根因（使用 `ak47-skill-systematic-debugging`），不擦表面。不"改进"相邻代码。
+4. **禁止跳过 Skills** — 1% 可能性即强制调用。详见上方 1% 规则和禁止跳过清单。
+5. **禁止无目标执行** — 将指令转化为可验证的目标。"修复 bug" → "写重现测试，然后让它通过"。
+6. **禁止忽略 Hook 警告** — 看到 🔴/🟡 标记立即停止，加载对应 Skill 补救。详见上方 Hook 警告响应映射表。
+7. **禁止跳过门控** — 每个阶段产出必须等人确认。任何跳过需记录到 `.ak47/deviations.log`。
+8. **禁止水平切 Spec** — Spec 必须按端到端用户价值垂直切分。违反即致命问题，必须重新切分。

@@ -5,6 +5,38 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.1] - 2026-05-14
+
+### ✨ 新增
+
+- **三层门禁架构**：解决 Artifact 增量修改后审查门禁绕开和 Brief 遗漏两类流程偏离
+  - 新增 `post-artifact-modification-check.sh` Hook：修改已审查通过的 proposal/design/tasks/specs 后自动警告，要求执行增量 critical-review
+  - 新增 `post-tasks-completed-check.sh` Hook：tasks 全部完成且变更规模超阈值时自动警告，要求生成 Agent Brief
+  - 新增 `.ak47/workflow-rules.yaml` 规则定义源：`artifact-modification-review-gate` + `brief-generation-gate` 两个门控规则
+  - 新增 `.qoder/rules/workflow-state.md` 硬规则：增量修改审查门禁 + Brief 门禁（持续门禁，非一次性）
+  - 三层协同：Hook 自动拦截 → always-on rule 持续约束 → 人工门控确认
+
+### 🔧 强化
+
+- **critical-review SKILL.md**：新增「🚫 禁止 AI 自我审查」pre-check，禁止 AI 自行"扫一眼+顺手修 bug"替代正式审查
+  - 红线新增 3 条：禁止自行扫一眼替代审查、禁止修改后自行修复并声明通过、禁止以"改动小"为借口跳过
+- **triage-brief SKILL.md**：新增「🚫 禁止 AI 跳过 Brief」pre-check，明确禁止行为与跳过条件
+- **workflow-state.md 模板**：关键节点推送新增"Artifact 修改"场景，Brief 集成新增硬规则
+- **workflow-rules.yaml 模板**：新增 `gateRules` 节，作为门控规则的分布模板
+
+### 📝 知识
+
+- 偏离记录：Artifact 增量修改绕开审查 + Brief 生成跳过，均记录到 `.ak47/deviations.log`（已标记 remediated）
+
+## [0.7.0] - 2026-05-14
+
+### 🔧 强化
+
+- **AGENTS.md 模板重构**：将 rules 中的核心约束内联至 AGENTS.md（1% 规则禁止跳过清单、Hook 警告响应映射表、门控 G1-G11 摘要、Spec 垂直切片强制规则、状态回退/阻塞检测/老项目接入规则），使 AGENTS.md 成为 Qoder 原生自动加载的自给自足约束层
+- **Rules 定位降级**：`.qoder/rules/*.md` 从"全局注入"降级为"可选增强层"，需在 IDE 手动配置类型后生效；四个 rules 文件头部统一修正注入方式说明
+- **消除误导性表述**：修正 AGENTS.md 中"Qoder 自动注入"等与实际机制不符的描述，明确 rules 需 IDE 手动配置的事实
+- **禁止行为扩展**：从 5 条扩展至 8 条自给自足条目，新增禁止忽略 Hook 警告、禁止跳过门控、禁止水平切 Spec
+
 ## [0.6.9] - 2026-05-14
 
 ### ✨ 新增

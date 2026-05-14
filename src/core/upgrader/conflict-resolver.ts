@@ -5,7 +5,12 @@ import chalk from 'chalk';
 /**
  * 冲突解决选项
  */
-export type ConflictResolution = 'keep-user' | 'use-template' | 'merge-later';
+export type ConflictResolution =
+  | 'keep-user'
+  | 'use-template'
+  | 'merge-later'
+  | 'keep-all-user'
+  | 'use-all-template';
 
 /**
  * 冲突文件信息
@@ -51,6 +56,16 @@ export async function resolveConflict(
         name: '🔧 稍后手动合并',
         value: 'merge-later' as ConflictResolution,
         description: '保留两个版本,稍后自行合并',
+      },
+      {
+        name: '🔒 全部使用我的版本 (剩余冲突不再询问)',
+        value: 'keep-all-user' as ConflictResolution,
+        description: '当前及之后所有冲突文件均保留您的修改',
+      },
+      {
+        name: '📥 全部使用模板新版本 (剩余冲突不再询问)',
+        value: 'use-all-template' as ConflictResolution,
+        description: '当前及之后所有冲突文件均使用模板版本',
       },
     ],
     default: 'merge-later',
@@ -122,6 +137,19 @@ export async function executeConflictResolution(
       console.log(chalk.gray(`      • 您的版本: ${conflict.userPath}`));
       console.log(chalk.gray(`      • 模板版本: ${conflict.templatePath}`));
       console.log(chalk.gray(`      请手动合并后删除 .new 文件`));
+      break;
+
+    case 'keep-all-user':
+      // 全部保留用户版本 (与 keep-user 相同,但由调用方控制批量逻辑)
+      await rm(conflict.templatePath, { force: true });
+      console.log(chalk.green(`   ✓ 已保留您的版本 (全部应用)`));
+      break;
+
+    case 'use-all-template':
+      // 全部使用模板版本 (与 use-template 相同,但由调用方控制批量逻辑)
+      await cp(conflict.templatePath, conflict.userPath, { force: true });
+      await rm(conflict.templatePath, { force: true });
+      console.log(chalk.green(`   ✓ 已使用模板新版本覆盖 (全部应用)`));
       break;
   }
 }

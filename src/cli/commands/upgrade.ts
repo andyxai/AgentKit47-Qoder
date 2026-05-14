@@ -7,7 +7,7 @@ import { validateProject } from '../../core/validator/index.js';
 import { getConfigPath } from '../../utils/paths.js';
 import { scanCustomFiles, backupCustomFiles } from '../../core/upgrader/custom-file-scanner.js';
 import { loadSnapshot } from '../../core/upgrader/snapshot-manager.js';
-import { resolveConflict, executeConflictResolution, type ConflictFile } from '../../core/upgrader/conflict-resolver.js';
+import { resolveConflict, executeConflictResolution, type ConflictFile, type ConflictResolution } from '../../core/upgrader/conflict-resolver.js';
 import { backupProjectConfig } from '../../core/upgrader/config-backup.js';
 
 
@@ -245,17 +245,37 @@ export const upgradeCommand = new Command('upgrade')
     if (conflictEntries.length > 0 && !options.yes) {
       console.log(chalk.yellow('\n⚠️  发现冲突文件，需要您决定如何处理:\n'));
 
+      // 将所有冲突文件展开为扁平列表
+      const allConflicts: ConflictFile[] = [];
       for (const entry of conflictEntries) {
         for (const file of entry.files) {
-          const conflict: ConflictFile = {
+          allConflicts.push({
             relativePath: file,
             userPath: `${projectDir}/${file}`,
             templatePath: `${projectDir}/${file}.new`,
-          };
-
-          const resolution = await resolveConflict(conflict);
-          await executeConflictResolution(conflict, resolution);
+          });
         }
+      }
+
+      let bulkResolution: 'keep-user' | 'use-template' | null = null;
+
+      for (const conflict of allConflicts) {
+        let resolution: ConflictResolution;
+
+        if (bulkResolution) {
+          resolution = bulkResolution;
+        } else {
+          resolution = await resolveConflict(conflict);
+          if (resolution === 'keep-all-user') {
+            bulkResolution = 'keep-user';
+            resolution = 'keep-user';
+          } else if (resolution === 'use-all-template') {
+            bulkResolution = 'use-template';
+            resolution = 'use-template';
+          }
+        }
+
+        await executeConflictResolution(conflict, resolution);
       }
     }
 

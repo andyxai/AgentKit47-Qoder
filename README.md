@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.6.8-blue" alt="Version"/></a>
+    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.7.1-blue" alt="Version"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/node-%3E%3D20.19.0-brightgreen" alt="Node"/></a>
 </p>
@@ -29,6 +29,7 @@
 - [📂 项目结构](#-项目结构)
 - [🛠️ 开发指南](#️-开发指南)
 - [📖 了解更多](#-了解更多)
+- [📮 反馈与建议](#-反馈与建议)
 - [📋 版本历史](#-版本历史)
 - [📄 许可证](#-许可证)
 
@@ -306,12 +307,25 @@ npm run format       # 代码格式化
 
 ---
 
+## 📮 反馈与建议
+
+使用 AK47 的过程中如果有让你不爽的地方，可以在 Qoder 中对 AI 说：
+
+> **"提交 AK47 改进建议"**
+
+AI 会调用改进提案 Skill，帮你把问题和改进方向整理成结构化文本。你只需把生成的文本贴到 [GitLab Issues](https://github.com/andyxai/AgentKit47-Qoder/-/issues)，或邮件到 **andyxai@126.com**。
+
+---
+
 ## 📋 版本历史
 
 > 每个版本的重要更新摘要，详细记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 | 版本 | 日期 | 重要更新 |
 |------|------|---------|
+| **0.7.1** | 2026-05-14 | 三层门禁架构：增量修改审查门禁 + Brief 门禁，禁止 AI 自审/跳过 Brief |
+| **0.7.0** | 2026-05-14 | AGENTS.md 模板重构（规则内联、消除误导性表述），rules 降级为可选增强层 |
+| **0.6.9** | 2026-05-14 | 门控 Hook 补齐（3 新 Hook，覆盖 G3-G8/G10），Spec 垂直切片规则，Hook 警告响应规则 |
 | **0.6.8** | 2026-05-13 | 同步脚本 URL 替换修复，README 语气收敛 |
 | **0.6.7** | 2026-05-13 | 门控规则体系（11 个门控点），自我改进双 Skill 体系（提案+审核），关键 Skill 强制触发规则 |
 | **0.6.6** | 2026-05-13 | Spec 审查门禁，移除 openspec skill 目录（改由 openspec init 生成） |

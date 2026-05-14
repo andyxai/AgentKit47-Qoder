@@ -52,5 +52,19 @@ if git diff --cached --name-only | grep -q '\.ak47/rules\.md'; then
   echo "   请确保 AI 已通过 ak47 validate 验证规则"
 fi
 
+# 5. 检查 package.json 版本与 README 版本历史表是否同步
+echo "  → 检查版本一致性..."
+if git diff --cached --name-only | grep -q 'package\.json'; then
+  PKG_VERSION="$(node -e "console.log(require('./package.json').version)" 2>/dev/null || true)"
+  if [ -n "$PKG_VERSION" ] && [ -f "README.md" ]; then
+    if ! grep -q "$PKG_VERSION" README.md 2>/dev/null; then
+      echo "❌ README.md 版本历史表缺少当前版本 v${PKG_VERSION}"
+      echo "   请在 README.md 的「版本历史」表格中添加 v${PKG_VERSION} 条目"
+      echo "   格式: | **${PKG_VERSION}** | $(date +%Y-%m-%d) | <更新摘要> |"
+      exit 1
+    fi
+  fi
+fi
+
 echo "✅ Pre-commit 检查通过"
 exit 0
