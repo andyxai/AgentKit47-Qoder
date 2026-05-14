@@ -13,6 +13,8 @@
 ### 核心规则(每次必遵守)
 - 💬 反馈行为准则 → 第 124 行
 - 🔴 1% 规则 → 第 593 行
+- 🚦 Hook 警告必须响应 → 第 720 行
+- 🚫 禁止跳过 TDD → 第 736 行
 - 🚫 禁止臆想 API → 第 706 行
 - 🚫 禁止过度设计 → 第 722 行
 - 🚫 禁止表面修复 → 第 741 行
@@ -708,9 +710,20 @@ openspec/                # OpenSpec 规范
 
 ### 禁止跳过 Skills
 
-- ❌ "这个场景不需要 TDD"
+- ❌ "这个场景不需要 TDD，我直接写代码吧"
 - ❌ "错误很明显，不用调试"
 - ❌ "功能简单，不用头脑风暴"
+- ❌ 编写实现代码前未加载 `ak47-skill-test-driven-development`
+- ❌ 创建 OpenSpec specs 前未加载 `ak47-skill-vertical-slicing`
+
+### 禁止忽略 Hook 警告
+
+> **原则**: Qoder Hook 输出的警告不得忽略。看到警告必须停止当前操作，加载对应 Skill 补救。
+
+- ❌ 看到 TDD 偏离警告后继续编写实现代码
+- ❌ 看到 artifacts 完成提示后跳过 critical-review 直接 apply
+- ❌ 以"只是个警告"为由忽略 Hook 输出
+- ❌ 不加载对应 Skill 自行处理 Hook 警告
 
 ### 禁止表面修复（Surgical Changes）
 

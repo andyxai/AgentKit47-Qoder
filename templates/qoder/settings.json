@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .qoder/hooks/pre-write-spec-check.sh"
+            "command": "bash .qoder/hooks/pre-write-artifacts-check.sh"
           }
         ]
       }
@@ -24,6 +24,19 @@
           {
             "type": "command",
             "command": "bash .qoder/hooks/post-doc-reference-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/post-artifacts-complete-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/pre-completion-check.sh"
           }
         ]
       }

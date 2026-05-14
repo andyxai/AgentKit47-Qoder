@@ -5,6 +5,29 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.9] - 2026-05-14
+
+### ✨ 新增
+
+- **Spec 垂直切片规则**：新增 `templates/qoder/rules/spec-vertical-slicing.md`，强制 Spec 按端到端用户价值垂直切分，禁止按技术组件水平切分
+
+- **门控 Hook 补齐（3 个新 Hook）**：
+  - `pre-write-artifacts-check.sh`：写代码前校验 G3-G6 artifacts 完整性
+  - `post-artifacts-complete-check.sh`：artifacts 全齐后自动提醒 G7 critical-review
+  - `pre-completion-check.sh`：Task 完成/提交前校验 G8 代码审查 + G10 测试覆盖
+  - Hook 覆盖从 1.5/6 个可自动化门控提升至 6/6 全覆盖
+
+### 🔧 强化
+
+- **core-behavior.md**：新增 Hook 警告必须响应规则及 6 条目映射表，关键 Skill 禁止自判跳过表增加 TDD 和垂直切片条目
+- **AGENTS.md**：禁止行为清单增加禁止忽略 Hook 警告、禁止跳过 TDD
+- **gate-control.md**：G5 specs 评审确认问法增加垂直切片检查
+- **settings.json**：注册全部 6 个 Hook（PreToolUse + PostToolUse）
+
+### 📝 知识
+
+- 踩坑记录：门控机制失效复盘归档（EXP-20260514-001）
+
 ## [0.6.8] - 2026-05-13
 
 ### 🐛 修复

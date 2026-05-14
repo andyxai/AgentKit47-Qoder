@@ -28,7 +28,8 @@
 | `ak47-skill-entry-guard` | 任何用户输入的第一步 | 自判"明显是修改请求"跳过 |
 | `ak47-skill-change-classification` | 准备创建 OpenSpec Change 前 / 编写代码前 | 自判"变更简单不需要分类" |
 | `ak47-skill-triage-brief` | tasks.md 创建完成，且变更规模超过阈值（工作量 > 2h / 跨模块 > 2 / 文件数 > 3 / 接口变更） | 自判"不需要 Brief"直接跳过 |
-| `ak47-skill-critical-review` | tasks.md 创建完成后 | 自判"提案质量不错不用审查" |
+| `ak47-skill-test-driven-development` | 编写任何实现代码前 | 自判"功能简单不需要 TDD"跳过；看到 Hook TDD 警告后忽略继续编码 |
+| `ak47-skill-vertical-slicing` | 创建 OpenSpec specs 前 | 自判"功能自然垂直"跳过；默认按组件水平切分
 
 ### 跳过判定规则
 
@@ -165,6 +166,35 @@
 - 用户明确表达了项目业务定义和目标
 - AI 反向复述，用户确认理解正确
 - 双方达成共识，可以进入标准化流程（OpenSpec 工作流）
+
+---
+
+## Hook 警告必须响应
+
+**原则**: Qoder Hook 输出的警告（stderr 中的 🔴/🟡 标记）不得忽略，必须采取响应行动。
+
+**响应流程**:
+1. Hook 检测到流程偏离（如 TDD 缺失、文档未更新等）并输出警告
+2. AI 看到警告后必须停止当前操作
+3. 加载对应的 Skill（如 TDD 偏离 → `ak47-skill-test-driven-development`）
+4. 按 Skill 流程补救（补测试 / 补文档 / 补审查）
+5. 补救完成后才能继续
+
+**常见 Hook 警告响应映射表**:
+
+| Hook 类型 | 警告信号 | 必须加载的 Skill | 响应动作 |
+|-----------|---------|-----------------|---------|
+| TDD 偏离 | 代码文件无对应测试文件 | `ak47-skill-test-driven-development` | 停止编码 → 补测试 → 通过后继续 |
+| Artifacts 缺失 | 写代码前 proposal/design/specs/tasks 不齐 | `openspec-propose` 或对应 artifact Skill | 停止编码 → 补齐缺失 artifact → 用户评审通过后继续 |
+| Artifacts 全齐 | proposal/design/specs/tasks 全部完成 | `ak47-skill-critical-review` | 停止推进 → 执行 critical-review → 用户批准后 apply |
+| 缺少代码审查 | Task 完成/提交前无审查记录 | `ak47-skill-code-review` 或委托 `ak47-agent-reviewer` | 停止提交 → 执行代码审查 → 审查通过后继续 |
+| 测试覆盖不足 | 提交前 >30% 源码文件无测试 | `ak47-skill-test-driven-development` | 停止提交 → 补测试 → 覆盖达标后继续 |
+| 文档缺失 | 关键文档未更新 | `ak47-skill-critical-review` | 停止提交 → 补文档 → 审查后继续 |
+
+**禁止行为**:
+- ❌ 看到 Hook 警告后继续操作（"只是个警告，不影响"）
+- ❌ 不加载对应 Skill 自行处理
+- ❌ 忽略警告继续编码或提交
 
 ---
 
