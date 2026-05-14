@@ -52,6 +52,56 @@ digraph critical_review {
 
 ---
 
+## Pre-check：Brief 生成状态检查（审核前必须执行）
+
+**目标**：确保复杂变更在进入批判性审核前已完成 Agent Brief 生成。
+
+**触发时机**：每次 critical-review 启动时（在加载待审核文档之前）。
+
+### 检查流程
+
+1. **评估变更规模**：
+   - 读取 `tasks.md`，统计任务组/模块/文件数量
+   - 检查是否涉及接口变更（新 API、函数签名修改）
+
+2. **判断是否需要 Brief**：
+   - 工作量 > 2 小时
+   - 跨模块（≥ 2 个模块）
+   - 文件数 > 3
+   - 涉及接口变更
+   - 符合任一条件 → 需要 Brief
+
+3. **检查 Brief 状态**：
+   - 检查 `.ak47/briefs/<change-name>.md` 是否已生成
+
+4. **处理逻辑**：
+   ```
+   需要 Brief？
+     ├─ 是，且已生成 → 继续审核流程
+     ├─ 是，但未生成 → 🔴 中断审核
+     │   → 提示："当前变更规模符合 Brief 生成条件，但 Brief 尚未生成。
+     │            请先调用 ak47-skill-triage-brief 生成 Agent Brief，
+     │            再重新启动批判性审核。是否现在生成？"
+     │   → 等待用户决定
+     └─ 否（简单变更）→ 记录理由，继续审核流程
+   ```
+
+5. **偏离记录**：
+   - 若用户确认跳过 Brief，必须记录到 `.ak47/deviations.log`：
+     ```yaml
+     - timestamp: "YYYY-MM-DDTHH:MM:SSZ"
+       deviation: "跳过 G6.5 Brief 生成检查"
+       reason: "用户确认跳过，理由: {理由}"
+       approved_by: "user"
+     ```
+
+**禁止行为**：
+- ❌ 不检查 Brief 状态就直接进入审核
+- ❌ 发现 Brief 缺失但不提示用户
+- ❌ 静默跳过偏离记录
+
+---
+
 ## 批判性分析维度
 
 ### 1️⃣ 假设识别（Assumption Detection）
@@ -313,6 +363,7 @@ D. 需要进一步讨论"
 |-------|------|------|
 | **requirements-definition** | 前置调用 | 需求文档完成后调用此 Skill |
 | **architecture-design** | 前置调用 | 架构设计完成后调用此 Skill |
+| **triage-brief** | 前置依赖 | 复杂变更必须先通过 triage-brief 生成 Brief，再进入 critical-review |
 | **terminology-management** | 依赖 | 使用 CONTEXT.md 进行一致性检查 |
 | **experience-summarization** | 后续调用 | 审核完成后沉淀经验 |
 

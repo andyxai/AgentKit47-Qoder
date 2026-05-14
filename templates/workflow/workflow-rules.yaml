@@ -55,6 +55,13 @@ stateInference:
         - allTasksCompleted: true
       drafting:
         - exists: true
+    
+    brief:
+      completed:
+        - exists: true
+        - contains: "## Acceptance criteria"
+      notRequired:
+        - changeComplexity: "simple"  # < 2h, single module, < 3 files, no API change
 
   # Change 状态推断逻辑（基于 Artifact 状态）
   changeStatePriority:
@@ -218,6 +225,32 @@ nextStepRules:
       - "下一步建议："
       - "  {nextAction}"
     priority: 70
+
+  # 规则 4.5: Brief 检查引导
+  - id: brief-check
+    name: "Brief 生成检查引导"
+    when:
+      change.state: tasking
+      event: "tasks completed"
+      changeComplexity:
+        hours: "> 2"
+        modules: "> 2"
+        files: "> 3"
+        apiChange: true
+    suggest:
+      - "📋 检测到变更规模较大，符合 Agent Brief 生成条件："
+      - ""
+      - "  工作量: > 2 小时"
+      - "  跨模块: ≥ 2 个模块"
+      - "  文件数: > 3 个文件"
+      - "  接口变更: 是"
+      - ""
+      - "建议操作："
+      - "  1. 生成 Agent Brief：调用 ak47-skill-triage-brief"
+      - "  2. 跳过 Brief（需记录偏离到 .ak47/deviations.log）"
+      - ""
+      - "💡 Agent Brief 能防止信息损失，确保实施阶段不遗漏关键需求"
+    priority: 65
 
   # 规则 5: 任务完成引导
   - id: task-completed

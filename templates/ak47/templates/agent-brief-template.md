@@ -249,6 +249,53 @@ Brief 确认
        告知用户并说明理由
 ```
 
+### OpenSpec 工作流集成
+
+**生成时机**: tasks.md 完成后，critical-review 开始前（参见 `gate-control.md` G6.5）。
+
+```
+OpenSpec 工作流                          Brief 工作流
+─────────────────                       ─────────────
+proposal.md (Why/What)
+  ↓
+specs/*.md (Requirements/Scenarios)
+  ↓
+design.md (Architecture)
+  ↓
+tasks.md (Task breakdown)
+  ↓
+  ├────────────────────────────────→  评估变更规模
+  │                                    ↓
+  │                                  符合条件？
+  │                                    ├─ 是 → 生成 brief.md
+  │                                    │        ├─ Summary
+  │                                    │        ├─ Acceptance criteria
+  │                                    │        ├─ Out of scope
+  │                                    │        ├─ Reference files  
+  │                                    │        └─ 信息损失校验
+  │                                    │         ↓
+  │                                    │       用户确认 Brief
+  │                                    │         ↓
+  │                                    └─ 否 → 记录跳过理由
+  │                                              ↓
+  └←─────────────────────────────────────────────┘
+  ↓
+critical-review (G7)
+  ↓
+apply (实施)
+```
+
+**输入来源**（Brief 内容从以下 OpenSpec 产物提取）：
+- `proposal.md` → Summary（Why/What）
+- `specs/*.md` → Acceptance criteria、Key interfaces、Constraints
+- `design.md` → Reference files、Implementation hints
+- `tasks.md` → 工作量评估（决定是否需要 Brief）
+
+**输出去向**：
+- 供 apply 阶段的 AI Agent 参考（作为实施指引）
+- 作为 information loss check 的基准（triage-brief 自动执行）
+- 存储在 `.ak47/briefs/<change-name>.md`
+
 ---
 
 ## 版本历史

@@ -141,6 +141,7 @@ Change 状态:
 | 会话开始 | 读取工作流状态，摘要当前进展 |
 | Change 状态变化 | 检测到 Artifact 更新，提示下一步 |
 | 任务完成 | 标记 task `[x]` 后，提示下一个 task |
+| tasks.md 完成 | tasks 全部完成，且变更规模超过阈值时，提示生成 Agent Brief |
 | 阻塞检测 | 超过 2 天未活动，主动提醒 |
 
 **推送格式**:
@@ -150,6 +151,65 @@ Change 状态:
   建议：{nextAction}
   命令：{command}
 ```
+
+---
+
+## Brief 集成
+
+**Agent Brief** 是复杂变更在 tasks 完成后、critical-review 开始前必须生成的中间产物（参见 `gate-control.md` G6.5）。它确保实施阶段不遗漏关键需求信息。
+
+### 触发条件
+
+tasks.md 全部完成后，评估以下指标（任一即触发）：
+- 工作量 > 2 小时
+- 跨模块 ≥ 2 个
+- 文件数 > 3 个
+- 涉及 API/函数签名变更
+
+### 决策流程
+
+```
+tasks.md 全部完成
+  ↓
+评估变更规模
+  ↓
+符合 Brief 条件？
+  ├─ 是 → 调用 ak47-skill-triage-brief 生成 brief.md
+  │         ↓
+  │       Brief 生成 + 信息损失校验
+  │         ↓
+  │       用户确认
+  │         ↓
+  │       进入 critical-review（G7）
+  │
+  └─ 否 → 记录理由："变更规模较小，跳过 Brief"
+            ↓
+          询问用户："是否确认跳过？"
+            ↓
+          用户确认 → 进入 critical-review（G7）
+```
+
+### Brief 存储位置
+
+`.ak47/briefs/<change-name>.md`
+
+### 与 OpenSpec 工作流的关系
+
+| 阶段 | OpenSpec 产物 | Brief 状态 |
+|------|-------------|-----------|
+| proposing | proposal.md | — |
+| specing | specs/*.md | — |
+| designing | design.md | — |
+| tasking | tasks.md | — |
+| **briefing** | **brief.md** | 生成（复杂变更） |
+| reviewing | audit-report.md | 已确认（进入 G7） |
+| implementing | 代码变更 | 作为实施参考 |
+
+### 禁止行为
+
+- ❌ 复杂变更跳过 Brief 直接进入 critical-review
+- ❌ 跳过 Brief 不提示用户
+- ❌ 跳过 Brief 不记录偏离
 
 ---
 
@@ -194,17 +254,13 @@ Change 状态:
 
 ---
 
-## Spec 审查门禁
+## Spec 审查与人工确认门控
 
-**触发条件**: 任一 OpenSpec Change 的所有 artifacts（proposal / design / specs / tasks）全部完成（`openspec status` 显示 "All artifacts complete"）。
+**规则定义**: 逐 artifact 门控点、确认格式、偏离处理 → `gate-control.md`
 
-**强制流程**:
-1. 调用 `ak47-skill-critical-review` 或委托 `ak47-agent-reviewer` 对当前 Change 的 specs 和 design 做批判性审核
-2. 审核报告产出后，向用户呈现审查结论（致命/重大/建议），等待用户决策
-3. 若存在致命问题 → 修正后重新审查，不放行
-4. 用户显式批准后 → 方可进入 apply 阶段
+**本文件 (workflow-state.md) 的职责**: artifact 创建顺序和状态切换的追踪规则。人工确认断点统一由 `gate-control.md` 定义，避免重复。
 
-**禁止行为**:
-- ❌ artifacts complete 后直接 apply
-- ❌ 跳过审查自认为 spec 没问题
-- ❌ 审核结论未经用户确认就自行处理致命问题
+**关键引用**:
+- `gate-control.md` G3-G7: OpenSpec 阶段逐 artifact 门控
+- `gate-control.md` G7: 批判性审核门控（proposal/design/specs/tasks 全部评审通过后执行）
+- `gate-control.md` 偏离处理: 跳过门控的日志记录规范

@@ -84,6 +84,8 @@
 - **ak47-skill-terminology-management** - 术语管理:专业术语的统一翻译与管理
 - **ak47-skill-prototype** - 原型设计:快速原型验证
 - **ak47-skill-zoom-out** - 全局视角:跳出细节看整体架构
+- **ak47-skill-improvement-proposal** - 改进提案:深度诊断 AK47 行为问题，产出结构化改进建议，区分普适性缺陷与项目特有问题
+- **ak47-skill-improvement-audit** - 改进审核:审核改进提案，交叉判断 AK47 设计原则与用户项目诉求的合理性
 
 ### ak47 改造的 Superpowers Skills
 

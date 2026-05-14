@@ -5,6 +5,27 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.7] - 2026-05-13
+
+### ✨ 新增
+
+- **门控规则体系**：新增 `gate-control.md` 规则文件，定义 11 个门控点（G1-G11）覆盖 4 个流程阶段，支持 L1/L2/L3 范式感知门控强度
+  - `workflow-state.md` 的「Spec 审查门禁」节改为引用 `gate-control.md`，职责分离
+
+- **关键 Skill 强制触发规则**：`core-behavior.md` 新增关键 Skill 禁止自判跳过表（entry-guard / change-classification / triage-brief / critical-review），明确 AI 必须解释+询问用户才可跳过
+
+- **自我改进双 Skill 体系**：
+  - `ak47-skill-improvement-proposal`：工具改进提案 Skill，支持交互复盘、四象限+问题类型双重分类、修改范围边界检查
+  - `ak47-skill-improvement-audit`：改进审核 Skill，支持边界硬检查（不碰外部安装配置）、五档裁决（接纳/修改后接纳/暂缓/拒绝/转上游）、最终修改方案输出
+  - AGENTS.md 注册两个新 Skill
+
+- **变更分类强制触发**：`core-behavior.md` 新增变更分类触发条件与禁止行为，防止 AI 跳过分类直接出方案
+
+### 📝 文档
+
+- **README 新增自我改进反馈体系**：在「你的项目会获得什么？」新增一节
+- **README 语气收敛**：去掉"专家""所有…都""深度诊断""确保"等绝对化表述，"框架级通用"改为"通用化方向"，"设计上就是"改为"在设计中留出了定制空间"
+
 ## [0.6.6] - 2026-05-13
 
 ### 🛠️ 模板优化
