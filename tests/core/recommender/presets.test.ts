@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { getPresetUnits } from '../../../src/core/recommender/presets.js';
 
 describe('getPresetUnits', () => {
-  it('L1 预设返回 15 个单元 ID', () => {
+  it('L1 预设返回 17 个单元 ID', () => {
     const l1 = getPresetUnits('L1');
-    expect(l1).toHaveLength(15);
+    expect(l1).toHaveLength(17);
   });
 
   it('L2 预设返回 9 个单元 ID', () => {

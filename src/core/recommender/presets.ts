@@ -19,13 +19,15 @@ const PRESETS: Record<ParadigmLevel, readonly string[]> = {
     'ak47-agent-process-guardian',
     'ak47-agent-knowledge-engineer',
     'ak47-agent-config-maintainer',
-    // Skill（6 个）
+    // Skill（8 个）
     'ak47-skill-entry-guard',
     'ak47-skill-change-classification',
     'ak47-skill-anti-patterns',
     'ak47-skill-harness-design',
     'ak47-skill-knowledge-research',
     'ak47-skill-experience-summarization',
+    'ak47-skill-improvement-proposal',
+    'ak47-skill-improvement-audit',
     // 平台配置
     'platform-config',
   ],

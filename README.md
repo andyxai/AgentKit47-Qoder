@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.6.7-blue" alt="Version"/></a>
+    <a href="https://github.com/andyxai/AgentKit47-Qoder/-/tags"><img src="https://img.shields.io/badge/version-0.6.8-blue" alt="Version"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"/></a>
     <a href="https://github.com/andyxai/AgentKit47-Qoder"><img src="https://img.shields.io/badge/node-%3E%3D20.19.0-brightgreen" alt="Node"/></a>
 </p>
@@ -164,7 +164,6 @@ ak47 upgrade                      # 同步模板到最新版本
 ak47 update                       # 更新 CLI 工具自身
 ```
 
-> 详见 [PROJECT-INTRO.md](PROJECT-INTRO.md) 了解每个能力的详细说明和使用场景。
 
 ---
 
@@ -296,7 +295,6 @@ npm run format       # 代码格式化
 
 | 文档 | 说明 |
 |------|------|
-| [PROJECT-INTRO.md](PROJECT-INTRO.md) | 项目全面介绍（能力详解、使用场景、生成结构） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本更新日志 |
 | [安装指南](docs/guides/installation.md) | 详细安装步骤 |
 | [系统架构](docs/design/architecture/01-system-overview.md) | 架构设计概览 |

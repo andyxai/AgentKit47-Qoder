@@ -15,8 +15,8 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 const currentVersion = packageJson.version;
 
 // 仓库 URL 从 package.json 读取，适配 GitLab / GitHub / 私有化部署
-const REPO_URL = packageJson.repository?.url || 'https://gitlab.alibaba-inc.com/andy.zx/AgentKit47.git';
-const HOME_URL = packageJson.homepage || 'https://gitlab.alibaba-inc.com/andy.zx/AgentKit47';
+const REPO_URL = packageJson.repository?.url || 'https://github.com/andyxai/AgentKit47-Qoder.git';
+const HOME_URL = packageJson.homepage || 'https://github.com/andyxai/AgentKit47-Qoder';
 const releasesPath = REPO_URL.includes('github.com') ? '/releases' : '/-/releases';
 
 /**

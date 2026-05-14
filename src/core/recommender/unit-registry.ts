@@ -98,7 +98,7 @@ const UNITS: CapabilityUnitDef[] = [
   },
 
   // ═══════════════════════════════════════════════════════
-  // Skill 技能（6 个）— category: 'C'（Skill 技能类，项目独占）
+  // Skill 技能（8 个）— category: 'C'（Skill 技能类，项目独占）
   // ═══════════════════════════════════════════════════════
   {
     id: 'ak47-skill-entry-guard',
@@ -162,6 +162,28 @@ const UNITS: CapabilityUnitDef[] = [
     description: '将项目过程中的实践经验提炼为可复用的知识资产',
     platforms: ['qoder', 'claude-code'],
     dependencies: [],
+    paradigmLevels: ['L1'],
+    source: 'agentkit47',
+    files: [],
+  },
+  {
+    id: 'ak47-skill-improvement-proposal',
+    name: '改进提案',
+    category: 'C',
+    description: '深度诊断 AK47 行为问题，产出结构化改进建议，区分普适性缺陷与项目特有问题',
+    platforms: ['qoder', 'claude-code'],
+    dependencies: [],
+    paradigmLevels: ['L1'],
+    source: 'agentkit47',
+    files: [],
+  },
+  {
+    id: 'ak47-skill-improvement-audit',
+    name: '改进审核',
+    category: 'C',
+    description: '对改进提案进行独立审核，边界硬检查与五档裁决',
+    platforms: ['qoder', 'claude-code'],
+    dependencies: ['ak47-skill-improvement-proposal'],
     paradigmLevels: ['L1'],
     source: 'agentkit47',
     files: [],

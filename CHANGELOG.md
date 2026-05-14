@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.8] - 2026-05-13
+
+### 🐛 修复
+
+- 同步脚本 `sync-to-github.sh` 增加 `src/cli/commands/update.ts` 到 URL 替换列表，清理 fallback 中的 GitLab 内网地址
+
+### 📝 文档
+
+- README 新增自我改进反馈体系、语气收敛调整
+- CHANGELOG 补充 0.6.5-0.6.7 版本记录
+
 ## [0.6.7] - 2026-05-13
 
 ### ✨ 新增

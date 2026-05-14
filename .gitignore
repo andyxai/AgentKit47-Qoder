@@ -10,6 +10,9 @@ node_modules/
 # Research Projects (第三方研究资料本地副本)
 research-projects/
 
+# 本地备份（.ak47 等）
+backup/
+
 # AI Platform Config (AI 平台本地配置，不应提交)
 .aone_copilot/
 .qoder/

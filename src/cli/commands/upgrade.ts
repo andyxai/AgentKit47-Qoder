@@ -8,6 +8,7 @@ import { getConfigPath } from '../../utils/paths.js';
 import { scanCustomFiles, backupCustomFiles } from '../../core/upgrader/custom-file-scanner.js';
 import { loadSnapshot } from '../../core/upgrader/snapshot-manager.js';
 import { resolveConflict, executeConflictResolution, type ConflictFile } from '../../core/upgrader/conflict-resolver.js';
+import { backupProjectConfig } from '../../core/upgrader/config-backup.js';
 
 
 
@@ -114,6 +115,20 @@ export const upgradeCommand = new Command('upgrade')
     }
 
     console.log(chalk.blue('🔍 分析项目状态...\n'));
+
+    // 0. 升级前自动备份关键配置
+    console.log(chalk.blue('📦 备份关键配置...'));
+    try {
+      const backup = await backupProjectConfig(projectDir);
+      console.log(chalk.green(`✓ 备份 ${backup.itemCount} 项 → ${backup.backupPath}`));
+      if (backup.cleanedCount > 0) {
+        console.log(chalk.gray(`  清理 ${backup.cleanedCount} 个旧备份（保留最近 ${2} 次）`));
+      }
+      console.log('');
+    } catch (err) {
+      console.log(chalk.yellow(`⚠ 备份失败（不影响升级继续）: ${err instanceof Error ? err.message : String(err)}`));
+      console.log('');
+    }
 
     // 1. 加载快照
     const snapshot = await loadSnapshot(projectDir);
