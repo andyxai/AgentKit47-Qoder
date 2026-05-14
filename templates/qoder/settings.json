@@ -11,6 +11,15 @@
             "command": "bash .qoder/hooks/pre-write-artifacts-check.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|Create",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/pre-code-tdd-check.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

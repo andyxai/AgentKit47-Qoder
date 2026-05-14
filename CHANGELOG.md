@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.2] - 2026-05-14
+
+### 🔧 强化
+
+- **TDD 门控增强**：修复 apply 阶段 TDD 门控失效问题
+  - AGENTS.md 结构调整：Superpowers 使用规则前移至 Agent 分工原则之前，提升 1% 规则可见性
+  - 禁止跳过 Skills：新增 apply 阶段加载 openspec-apply-change 后未检查 TDD Skill 的禁止项
+  - post-code-tdd-check.sh：文件类型覆盖从 ts/tsx/js/jsx/py/go 扩展至 txt/yaml/yml/json/toml/cfg/ini/conf 等配置类文件
+  - 新建 pre-code-tdd-check.sh PreToolUse Hook：代码写入前自动提醒加载 TDD Skill
+  - workflow-rules.yaml：新增 tdd-enforcement-gate 规则定义
+  - workflow-state.md：新增 TDD 执行顺序指导（测试子任务必须先于实现执行，不受 tasks.md 编号约束）
+
 ## [0.7.1] - 2026-05-14
 
 ### ✨ 新增

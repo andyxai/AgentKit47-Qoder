@@ -48,6 +48,80 @@
 
 ---
 
+## 🚀 Skills 使用规则
+
+### 会话启动时必须执行
+
+1. 加载 `ak47-using-skills` Skill 了解完整 Skills 体系
+2. 遵循 1% 规则
+
+> **注意**: Qoder 官方支持的 Hook 事件为 `UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PostToolUseFailure`、`Stop`。**不存在** `SessionStart` 事件，因此会话启动加载依赖 AI 主动执行，不能依赖 Hook 自动触发。
+
+### 1% 规则（强制）
+
+**如果有 1% 可能某个 Skill 适用，你必须调用它。** 这不是协商的，不是可选的。
+
+以下 Skill 涉及流程纪律，AI **不得**自行判断"不需要"而跳过：
+
+| Skill | 触发场景 | 严禁行为 |
+|-------|----------|----------|
+| `ak47-skill-entry-guard` | 任何用户输入的第一步 | 自判"明显是修改请求"跳过 |
+| `ak47-skill-change-classification` | 准备创建 OpenSpec Change 前 / 编写代码前 | 自判"变更简单不需要分类" |
+| `ak47-skill-triage-brief` | tasks.md 创建完成，且变更规模超过阈值（工作量 > 2h / 跨模块 > 2 / 文件数 > 3 / 接口变更） | 自判"不需要 Brief"直接跳过 |
+| `ak47-skill-test-driven-development` | 编写任何实现代码前；apply 阶段加载 openspec-apply-change 后 | 自判"功能简单不需要 TDD"跳过；看到 Hook TDD 警告后忽略继续编码；apply 阶段未检查 TDD Skill 是否已加载 |
+| `ak47-skill-vertical-slicing` | 创建 OpenSpec specs 前 | 自判"功能自然垂直"跳过；默认按组件水平切分 |
+
+**跳过判定规则**: 如果 AI 认为当前场景不需要某个 Skill，必须：1) 明确说明原因；2) 询问用户是否同意跳过；3) 用户同意后才能跳过。
+
+清单规则: Skill 带 checklist 时，必须创建对应的 TodoWrite 任务逐项执行。
+
+---
+
+### Hook 警告必须响应
+
+Qoder Hook 输出的警告（stderr 中的 🔴/🟡 标记）不得忽略。**响应流程**: 停止当前操作 → 加载对应 Skill → 补救 → 继续。
+
+| Hook 类型 | 警告信号 | 必须加载的 Skill | 响应动作 |
+|-----------|---------|-----------------|---------|
+| TDD 偏离 | 代码文件无对应测试文件 | `ak47-skill-test-driven-development` | 停止编码 → 补测试 → 通过后继续 |
+| Artifacts 缺失 | 写代码前 proposal/design/specs/tasks 不齐 | `openspec-propose` 或对应 artifact Skill | 停止编码 → 补齐缺失 artifact → 用户评审通过后继续 |
+| Artifacts 全齐 | proposal/design/specs/tasks 全部完成 | `ak47-skill-critical-review` | 停止推进 → 执行 critical-review → 用户批准后 apply |
+| 缺少代码审查 | Task 完成/提交前无审查记录 | `ak47-skill-code-review` 或委托 `ak47-agent-reviewer` | 停止提交 → 执行代码审查 → 审查通过后继续 |
+| 测试覆盖不足 | 提交前 >30% 源码文件无测试 | `ak47-skill-test-driven-development` | 停止提交 → 补测试 → 覆盖达标后继续 |
+| 文档缺失 | 关键文档未更新 | `ak47-skill-critical-review` | 停止提交 → 补文档 → 审查后继续 |
+
+**禁止**: 看到 Hook 警告后继续操作 / 不加载对应 Skill 自行处理 / 忽略警告继续编码或提交。
+
+---
+
+## 🧭 Agent 分工原则
+
+> **核心原则**: Agent 分工基于"上下文连续性 vs 独立判断力"的权衡，而非教条的职责分工。
+
+**决策矩阵**:
+
+| 场景特征 | 推荐方案 | 原因 |
+|---------|---------|------|
+| 需要上下文连续性 | 主 Agent + Skill | 主 Agent 拥有完整对话历史 |
+| 需要独立判断力 | 子 Agent + Skill | 子 Agent 无历史包袱 |
+| 可以并发执行 | 多个子 Agent + Skill | 子 Agent 可并行运行 |
+
+**主 Agent 负责**: 产品需求讨论、代码设计与编写、即时经验沉淀、架构决策。
+
+**子 Agent 负责**: 审查类任务、并发独立任务、专业领域深度分析、跨会话经验整理。
+
+**子 Agent 的正确定位**:
+- ✅ "效率工具"（并发执行、缩短总耗时）
+- ❌ 不是"职责分工"
+
+**判断标准**: 如果任务需要"记得之前说过什么"，用主 Agent。
+
+**委托话术示例**:
+- ✅ "检测到 5 个 Task 互不依赖，可分配给 3 个 Code Agent 并行开发。是否开始？"
+- ❌ "根据职责分工，产品需求应由 Product Agent 编写。"
+
+---
+
 ## 👥 可用 Agent
 
 项目内共 **9 个** Agent，定义位于 `.qoder/agents/`：
@@ -98,80 +172,6 @@
 ### Misc（`misc/`，3 个）
 
 `ak47-skill-prototype` · `ak47-skill-terminology-management` · `ak47-skill-zoom-out`
-
----
-
-## 🧭 Agent 分工原则
-
-> **核心原则**: Agent 分工基于"上下文连续性 vs 独立判断力"的权衡，而非教条的职责分工。
-
-**决策矩阵**:
-
-| 场景特征 | 推荐方案 | 原因 |
-|---------|---------|------|
-| 需要上下文连续性 | 主 Agent + Skill | 主 Agent 拥有完整对话历史 |
-| 需要独立判断力 | 子 Agent + Skill | 子 Agent 无历史包袱 |
-| 可以并发执行 | 多个子 Agent + Skill | 子 Agent 可并行运行 |
-
-**主 Agent 负责**: 产品需求讨论、代码设计与编写、即时经验沉淀、架构决策。
-
-**子 Agent 负责**: 审查类任务、并发独立任务、专业领域深度分析、跨会话经验整理。
-
-**子 Agent 的正确定位**:
-- ✅ "效率工具"（并发执行、缩短总耗时）
-- ❌ 不是"职责分工"
-
-**判断标准**: 如果任务需要"记得之前说过什么"，用主 Agent。
-
-**委托话术示例**:
-- ✅ "检测到 5 个 Task 互不依赖，可分配给 3 个 Code Agent 并行开发。是否开始？"
-- ❌ "根据职责分工，产品需求应由 Product Agent 编写。"
-
----
-
-## 🚀 Skills 使用规则
-
-### 会话启动时必须执行
-
-1. 加载 `ak47-using-skills` Skill 了解完整 Skills 体系
-2. 遵循 1% 规则
-
-> **注意**: Qoder 官方支持的 Hook 事件为 `UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PostToolUseFailure`、`Stop`。**不存在** `SessionStart` 事件，因此会话启动加载依赖 AI 主动执行，不能依赖 Hook 自动触发。
-
-### 1% 规则（强制）
-
-**如果有 1% 可能某个 Skill 适用，你必须调用它。** 这不是协商的，不是可选的。
-
-以下 Skill 涉及流程纪律，AI **不得**自行判断"不需要"而跳过：
-
-| Skill | 触发场景 | 严禁行为 |
-|-------|----------|----------|
-| `ak47-skill-entry-guard` | 任何用户输入的第一步 | 自判"明显是修改请求"跳过 |
-| `ak47-skill-change-classification` | 准备创建 OpenSpec Change 前 / 编写代码前 | 自判"变更简单不需要分类" |
-| `ak47-skill-triage-brief` | tasks.md 创建完成，且变更规模超过阈值（工作量 > 2h / 跨模块 > 2 / 文件数 > 3 / 接口变更） | 自判"不需要 Brief"直接跳过 |
-| `ak47-skill-test-driven-development` | 编写任何实现代码前 | 自判"功能简单不需要 TDD"跳过；看到 Hook TDD 警告后忽略继续编码 |
-| `ak47-skill-vertical-slicing` | 创建 OpenSpec specs 前 | 自判"功能自然垂直"跳过；默认按组件水平切分 |
-
-**跳过判定规则**: 如果 AI 认为当前场景不需要某个 Skill，必须：1) 明确说明原因；2) 询问用户是否同意跳过；3) 用户同意后才能跳过。
-
-清单规则: Skill 带 checklist 时，必须创建对应的 TodoWrite 任务逐项执行。
-
----
-
-### Hook 警告必须响应
-
-Qoder Hook 输出的警告（stderr 中的 🔴/🟡 标记）不得忽略。**响应流程**: 停止当前操作 → 加载对应 Skill → 补救 → 继续。
-
-| Hook 类型 | 警告信号 | 必须加载的 Skill | 响应动作 |
-|-----------|---------|-----------------|---------|
-| TDD 偏离 | 代码文件无对应测试文件 | `ak47-skill-test-driven-development` | 停止编码 → 补测试 → 通过后继续 |
-| Artifacts 缺失 | 写代码前 proposal/design/specs/tasks 不齐 | `openspec-propose` 或对应 artifact Skill | 停止编码 → 补齐缺失 artifact → 用户评审通过后继续 |
-| Artifacts 全齐 | proposal/design/specs/tasks 全部完成 | `ak47-skill-critical-review` | 停止推进 → 执行 critical-review → 用户批准后 apply |
-| 缺少代码审查 | Task 完成/提交前无审查记录 | `ak47-skill-code-review` 或委托 `ak47-agent-reviewer` | 停止提交 → 执行代码审查 → 审查通过后继续 |
-| 测试覆盖不足 | 提交前 >30% 源码文件无测试 | `ak47-skill-test-driven-development` | 停止提交 → 补测试 → 覆盖达标后继续 |
-| 文档缺失 | 关键文档未更新 | `ak47-skill-critical-review` | 停止提交 → 补文档 → 审查后继续 |
-
-**禁止**: 看到 Hook 警告后继续操作 / 不加载对应 Skill 自行处理 / 忽略警告继续编码或提交。
 
 ---
 

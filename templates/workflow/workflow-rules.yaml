@@ -421,3 +421,40 @@ gateRules:
       - "Brief 生成后继续 critical-review"
     blocked_until: "brief-generated"
     priority: 80
+
+  # ===================================
+  # TDD 强制执行门禁（新增 2026-05-14）
+  # ===================================
+  # 说明: 与 TDD 门控失效复盘配套。由 pre-code-tdd-check Hook（PreToolUse）
+  #       和 post-code-tdd-check Hook（PostToolUse）共同消费。
+  - id: tdd-enforcement-gate
+    name: "TDD 强制执行门禁"
+    description: |
+      任何代码/配置文件写入前，必须确保已加载 TDD Skill
+      并严格遵循 RED → GREEN → REFACTOR 循环。
+    trigger:
+      event: "pre-write-code"
+      files:
+        - "**/*.ts"
+        - "**/*.tsx"
+        - "**/*.js"
+        - "**/*.jsx"
+        - "**/*.py"
+        - "**/*.go"
+        - "**/*.txt"
+        - "**/*.yaml"
+        - "**/*.yml"
+        - "**/*.json"
+        - "**/*.toml"
+        - "**/*.cfg"
+        - "**/*.ini"
+        - "**/*.conf"
+    required_actions:
+      - "加载 ak47-skill-test-driven-development"
+      - "先写测试（RED）→ 确认测试失败 → 编写实现（GREEN）→ 重构（REFACTOR）"
+    blocked_until: "tdd-skill-loaded"
+    exceptions:
+      - "纯测试文件本身（*.(test|spec).*）"
+      - "package.json / tsconfig.json / .eslintrc 等元数据配置文件"
+    auto_log_deviation: true
+    priority: 85

@@ -10,8 +10,8 @@ FILE_PATH="$(printf '%s' "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 
 
 [ -z "$FILE_PATH" ] && exit 0
 
-# 只对常见代码文件生效
-if ! printf '%s' "$FILE_PATH" | grep -Eq '\.(ts|tsx|js|jsx|py|go)$'; then
+# 只对常见代码文件生效（含配置文件，其同样需格式/可解析性验证）
+if ! printf '%s' "$FILE_PATH" | grep -Eq '\.(ts|tsx|js|jsx|py|go|txt|yaml|yml|json|toml|cfg|ini|conf)$'; then
   exit 0
 fi
 # 测试文件豁免
@@ -20,7 +20,7 @@ if printf '%s' "$FILE_PATH" | grep -Eq '\.(test|spec)\.'; then
 fi
 
 # 推导测试文件路径（保留原扩展名）
-TEST_FILE="$(printf '%s' "$FILE_PATH" | sed -E 's/\.(ts|tsx|js|jsx|py|go)$/.test.\1/')"
+TEST_FILE="$(printf '%s' "$FILE_PATH" | sed -E 's/\.(ts|tsx|js|jsx|py|go|txt|yaml|yml|json|toml|cfg|ini|conf)$/.test.\1/')"
 if [ -f "$TEST_FILE" ]; then
   exit 0
 fi

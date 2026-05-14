@@ -180,6 +180,39 @@ Change 状态:
 
 ---
 
+## 🔴 TDD 执行顺序指导
+
+> **新增于 2026-05-14，解决 apply 阶段 TDD 门控失效问题。**
+> **配套**: `pre-code-tdd-check.sh` + `post-code-tdd-check.sh` Hook + `tdd-enforcement-gate`
+
+**核心规则**: 无论 tasks.md 的编号顺序如何，每个 Task 组内的**测试子任务必须在对应实现子任务之前执行**。
+
+### 正确理解 tasks.md 的顺序
+
+tasks.md 的线性编号（5a.1 实现 → 5a.2 实现 → 5a.3 测试）是**组织便利**，不是**执行顺序约束**。TDD 的执行顺序是：
+
+```
+For each Task 组:
+  1. 先完成测试子任务（写测试 → RED）
+  2. 确认测试失败（验证 RED 正确）
+  3. 再完成实现子任务（写代码 → GREEN）
+  4. 确认测试通过
+  5. 重构子任务（REFACTOR）
+```
+
+### 禁止行为
+
+- ❌ 严格按 tasks.md 编号顺序执行（先实现后测试）
+- ❌ 将测试跳到最后统一补写
+- ❌ 以"配置文件不需要测试"为借口跳过 TDD
+- ❌ apply 阶段加载 openspec-apply-change 后未检查 TDD Skill 是否已加载
+
+### 正确做法
+
+> "tasks.md 中 Task 5a 包含 5a.1 实现、5a.2 实现、5a.3 测试。按照 TDD 规则，我先执行 5a.3 测试（RED），确认测试失败后再执行 5a.1-5a.2 实现（GREEN）。"
+
+---
+
 ## Brief 集成
 
 **Agent Brief** 是复杂变更在 tasks 完成后、critical-review 开始前必须生成的中间产物（参见 `gate-control.md` G6.5）。它确保实施阶段不遗漏关键需求信息。
