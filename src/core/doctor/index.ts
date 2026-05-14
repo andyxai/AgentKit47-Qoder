@@ -92,9 +92,7 @@ function sectionSeverity(checks: DoctorCheck[]): DoctorSeverity {
   return checks.reduce<DoctorSeverity>((acc, c) => escalate(acc, c.severity), 'pass');
 }
 
-/**
- * 1. 环境检查：Node 版本、CLI 版本
- */
+  // 1. 环境检查：Node 版本、CLI 版本
 function checkEnvironment(cliVersion: string, nodeVersion: string): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
 
@@ -470,6 +468,95 @@ async function collectNewFiles(
 }
 
 /**
+ * 7. 规则文件完整性：检查 .qoder/rules/ 和 AGENTS.md 门控章节
+ */
+async function checkRulesCompleteness(projectDir: string): Promise<DoctorCheck[]> {
+  const checks: DoctorCheck[] = [];
+  const templateDir = getTemplateDir();
+
+  // 检查 .qoder/rules/ 下的 AK47 核心规则文件
+  const rulesDir = join(projectDir, '.qoder', 'rules');
+  const expectedRules = ['core-behavior.md', 'gate-control.md', 'spec-vertical-slicing.md', 'workflow-state.md'];
+
+  if (!existsSync(rulesDir)) {
+    checks.push({
+      id: 'rules.dir-missing',
+      title: '.qoder/rules/ 目录',
+      severity: 'warn',
+      message: '.qoder/rules/ 目录不存在',
+      hint: '运行 ak47 init 或 ak47 upgrade 补充',
+    });
+  } else {
+    const missingRules: string[] = [];
+    for (const ruleFile of expectedRules) {
+      if (!existsSync(join(rulesDir, ruleFile))) {
+        missingRules.push(ruleFile);
+      }
+    }
+
+    if (missingRules.length > 0) {
+      checks.push({
+        id: 'rules.missing-files',
+        title: '.qoder/rules/ 规则文件',
+        severity: 'warn',
+        message: `缺失 ${missingRules.length} 个核心规则文件: ${missingRules.join(', ')}`,
+        hint: '运行 ak47 upgrade 补写缺失文件，或手动从 templates/qoder/rules/ 复制',
+        details: { missing: missingRules },
+      });
+    } else {
+      checks.push({
+        id: 'rules.missing-files',
+        title: '.qoder/rules/ 规则文件',
+        severity: 'pass',
+        message: `${expectedRules.length} 个核心规则文件齐全`,
+      });
+    }
+  }
+
+  // 检查 AGENTS.md 是否包含门控纪律章节
+  const agentsMdPath = join(projectDir, 'AGENTS.md');
+  if (!existsSync(agentsMdPath)) {
+    checks.push({
+      id: 'rules.agents-md-missing',
+      title: 'AGENTS.md 文件',
+      severity: 'fail',
+      message: 'AGENTS.md 不存在',
+      hint: '运行 ak47 init 生成',
+    });
+  } else {
+    try {
+      const content = await readFile(agentsMdPath, 'utf-8');
+      const hasGateChapter = content.includes('门控纪律') || content.includes('G1\n|') || content.includes('G1 需求理解确认');
+      if (!hasGateChapter) {
+        checks.push({
+          id: 'rules.gate-chapter-missing',
+          title: 'AGENTS.md 门控纪律章节',
+          severity: 'fail',
+          message: 'AGENTS.md 缺少「门控纪律」章节（G1-G11 门控点清单）',
+          hint: '运行 ak47 upgrade 生成 AGENTS.md.new，手动合并门控章节',
+        });
+      } else {
+        checks.push({
+          id: 'rules.gate-chapter-missing',
+          title: 'AGENTS.md 门控纪律章节',
+          severity: 'pass',
+          message: '包含门控纪律章节',
+        });
+      }
+    } catch {
+      checks.push({
+        id: 'rules.gate-chapter-missing',
+        title: 'AGENTS.md 门控纪律章节',
+        severity: 'warn',
+        message: 'AGENTS.md 读取失败',
+      });
+    }
+  }
+
+  return checks;
+}
+
+/**
  * 入口：运行全部检查
  */
 export async function runDoctor(projectDir: string): Promise<DoctorReport> {
@@ -482,6 +569,7 @@ export async function runDoctor(projectDir: string): Promise<DoctorReport> {
   const sections: DoctorSection[] = [
     { name: '环境', checks: checkEnvironment(cliVersion, nodeVersion) },
     { name: '项目结构', checks: await checkStructure(projectDir) },
+    { name: '规则文件完整性', checks: await checkRulesCompleteness(projectDir) },
     { name: '快照一致性', checks: await checkSnapshotIntegrity(projectDir) },
     { name: '升级待办', checks: await checkUpgradePending(projectDir) },
     { name: '自定义资产', checks: await checkCustomAssets(projectDir) },

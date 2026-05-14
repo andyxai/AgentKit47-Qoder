@@ -21,12 +21,15 @@ const releasesPath = REPO_URL.includes('github.com') ? '/releases' : '/-/release
 
 /**
  * 获取远程最新版本号
+ * 优先 git ls-remote（最快，复用已有 git 凭证），失败则回退 GitLab API
  */
 async function getLatestVersion(): Promise<string | null> {
+  // 方案 1: git ls-remote --tags（需要 git + 仓库访问权限）
   try {
     const remoteTags = execSync(`git ls-remote --tags ${REPO_URL}`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'ignore'],
+      timeout: 10000,
     });
 
     const versionRegex = /refs\/tags\/(v[0-9]+\.[0-9]+\.[0-9]+)$/gm;
@@ -36,23 +39,56 @@ async function getLatestVersion(): Promise<string | null> {
       versions.push(match[1]);
     }
 
-    if (versions.length === 0) {
-      return null;
+    if (versions.length > 0) {
+      const sortedVersions = versions.sort((a, b) => {
+        const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
+        const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
+        if (aMajor !== bMajor) return aMajor - bMajor;
+        if (aMinor !== bMinor) return aMinor - bMinor;
+        return aPatch - bPatch;
+      });
+      return sortedVersions[sortedVersions.length - 1];
     }
-
-    // 排序找到最新版本
-    const sortedVersions = versions.sort((a, b) => {
-      const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
-      const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
-      if (aMajor !== bMajor) return aMajor - bMajor;
-      if (aMinor !== bMinor) return aMinor - bMinor;
-      return aPatch - bPatch;
-    });
-
-    return sortedVersions[sortedVersions.length - 1];
   } catch {
-    return null;
+    // git ls-remote 失败，回退 GitLab API
   }
+
+  // 方案 2: GitLab REST API（只需 HTTPS，无需 git 凭证）
+  try {
+    // 从 REPO_URL 推导 API 地址: https://HOST/OWNER/REPO.git → https://HOST/api/v4/projects/OWNER%2FREPO/repository/tags
+    const urlMatch = REPO_URL.match(/^https?:\/\/([^\/]+)\/(.+)\.git$/);
+    if (urlMatch) {
+      const host = urlMatch[1];
+      const projectPath = encodeURIComponent(urlMatch[2]);
+      const apiUrl = `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+
+      const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 "${apiUrl}"`, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+        timeout: 20000,
+      });
+
+      const tags: Array<{ name: string }> = JSON.parse(response);
+      const versions = tags
+        .map((t) => t.name)
+        .filter((name): name is string => /^v\d+\.\d+\.\d+$/.test(name))
+        .sort((a, b) => {
+          const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
+          const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
+          if (aMajor !== bMajor) return aMajor - bMajor;
+          if (aMinor !== bMinor) return aMinor - bMinor;
+          return aPatch - bPatch;
+        });
+
+      if (versions.length > 0) {
+        return versions[versions.length - 1];
+      }
+    }
+  } catch {
+    // GitLab API 也失败
+  }
+
+  return null;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { homedir } from 'node:os';
 import { runDoctor, type DoctorSeverity, type DoctorCheck } from '../../core/doctor/index.js';
 
 function severityIcon(s: DoctorSeverity): string {
@@ -35,7 +36,13 @@ export const doctorCommand = new Command('doctor')
   .description('项目健康体检 - 汇总环境/结构/快照/升级待办等确定性证据')
   .option('--json', '以 JSON 格式输出，便于 Skill/CI 消费')
   .action(async (options: { json?: boolean }) => {
-    const projectDir = process.cwd();
+    let projectDir: string;
+    try {
+      projectDir = process.cwd();
+    } catch {
+      projectDir = homedir();
+      console.log(chalk.yellow(`⚠ 当前工作目录已失效，回退到: ${projectDir}`));
+    }
     const report = await runDoctor(projectDir);
 
     if (options.json) {

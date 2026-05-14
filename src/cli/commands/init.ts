@@ -4,6 +4,7 @@ import { select, confirm, input } from '@inquirer/prompts';
 import { basename, dirname, join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
@@ -57,10 +58,19 @@ export const initCommand = new Command('init')
     console.log(chalk.blue('ak47 init - 项目初始化'));
     console.log('');
 
+    // 安全获取当前工作目录
+    let cwd: string;
+    try {
+      cwd = process.cwd();
+    } catch {
+      cwd = homedir();
+      console.log(chalk.yellow(`⚠ 当前工作目录已失效，回退到: ${cwd}`));
+    }
+
     // 0. 确定项目根目录
     let projectPath: string;
     if (options.yes) {
-      projectPath = targetPath === '.' ? process.cwd() : targetPath;
+      projectPath = targetPath === '.' ? cwd : targetPath;
       console.log(chalk.gray(`→ 项目路径: ${projectPath}`));
     } else {
       const mode = await select({
@@ -72,14 +82,14 @@ export const initCommand = new Command('init')
       });
 
       if (mode === 'current') {
-        projectPath = targetPath === '.' ? process.cwd() : targetPath;
+        projectPath = targetPath === '.' ? cwd : targetPath;
         console.log(chalk.gray(`→ 项目路径: ${projectPath}`));
       } else {
         const projectName = await input({
           message: '请输入项目名称:',
           default: 'my-project',
         });
-        projectPath = path.join(process.cwd(), projectName);
+        projectPath = path.join(cwd, projectName);
 
         // 创建项目目录
         if (!fs.existsSync(projectPath)) {
@@ -395,6 +405,9 @@ async function copyQoderConfig(projectPath: string): Promise<void> {
     console.log(chalk.gray('  → 创建 .qoder 目录'));
     await copyDirectoryRecursive(qoderTemplateDir, qoderTargetDir);
   }
+
+  // 1.1 确保 rules 文件齐全（AK47 管理的规则文件，不受 safe-skip 保护，缺失则补写）
+  await ensureRulesFiles(qoderTemplateDir, qoderTargetDir);
   
   // 2. 复制 ak47/templates/ 系统模板
   const ak47TemplatesDir = path.join(getTemplatesRoot(), 'ak47', 'templates');
@@ -457,6 +470,37 @@ async function copyDirectoryRecursive(
       if (!exists || options.overwrite) {
         fs.copyFileSync(sourcePath, targetPath);
       }
+    }
+  }
+}
+
+/**
+ * 确保 .qoder/rules/ 下的 AK47 管理规则文件齐全
+ *
+ * 与 copyDirectoryRecursive 的 safe-skip 策略不同，rules 文件由 AK47 完全管理，
+ * 缺失时必须从模板补写（用户自定义规则应放在独立文件）
+ */
+async function ensureRulesFiles(templateDir: string, targetDir: string): Promise<void> {
+  const rulesTemplateDir = path.join(templateDir, 'rules');
+  const rulesTargetDir = path.join(targetDir, 'rules');
+
+  if (!fs.existsSync(rulesTemplateDir)) return;
+
+  // 确保目标目录存在
+  if (!fs.existsSync(rulesTargetDir)) {
+    fs.mkdirSync(rulesTargetDir, { recursive: true });
+  }
+
+  const templateFiles = fs.readdirSync(rulesTemplateDir, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => e.name);
+
+  for (const fileName of templateFiles) {
+    const targetPath = path.join(rulesTargetDir, fileName);
+    if (!fs.existsSync(targetPath)) {
+      const sourcePath = path.join(rulesTemplateDir, fileName);
+      fs.copyFileSync(sourcePath, targetPath);
+      console.log(chalk.gray(`  → 补写缺失规则: .qoder/rules/${fileName}`));
     }
   }
 }

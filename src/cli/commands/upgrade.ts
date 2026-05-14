@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { confirm } from '@inquirer/prompts';
 import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { executeUpgrade, type UpgradeOptions } from '../../core/upgrader/index.js';
 import { validateProject } from '../../core/validator/index.js';
 import { getConfigPath } from '../../utils/paths.js';
@@ -106,7 +108,13 @@ export const upgradeCommand = new Command('upgrade')
   .option('--yes', '跳过确认直接升级')
   .option('--only <units>', '仅升级指定能力单元（逗号分隔）')
   .action(async (options: { dryRun?: boolean; yes?: boolean; only?: string }) => {
-    const projectDir = process.cwd();
+    let projectDir: string;
+    try {
+      projectDir = process.cwd();
+    } catch {
+      projectDir = homedir();
+      console.log(chalk.yellow(`⚠ 当前工作目录已失效，回退到: ${projectDir}`));
+    }
 
     if (!existsSync(getConfigPath(projectDir))) {
       console.error(chalk.red('✗ 未找到 .ak47/config.yaml'));
@@ -324,5 +332,13 @@ export const upgradeCommand = new Command('upgrade')
       console.log(chalk.yellow('⚠️  待处理:'));
       console.log(chalk.gray(`  • ${conflictEntries.length} 个冲突文件需要处理`));
       console.log(chalk.gray('  • 检查 .new 文件并决定保留哪个版本\n'));
+    }
+
+    // 检查 AGENTS.md.new
+    const agentsNewPath = join(projectDir, 'AGENTS.md.new');
+    if (existsSync(agentsNewPath)) {
+      console.log(chalk.yellow('📄 模板 AGENTS.md 已更新:'));
+      console.log(chalk.gray('  • AGENTS.md.new 包含最新模板内容'));
+      console.log(chalk.gray('  • 对比项目 AGENTS.md 与 AGENTS.md.new，手动合并门控纪律等新增章节\n'));
     }
   });

@@ -1,32 +1,35 @@
 # AGENTS.md - 项目 AI 行为指令
 
-> 本文档定义 AI 必须遵循的行为规则。
-> 
-> **位置**: 项目根目录
-> **作用**: 告诉 AI 如何使用项目的 Agent 和 Skill 体系
-> **优先级**: 用户指令 > AGENTS.md > 默认行为
+> 本文档定义 AI 在本项目中必须遵循的行为规则。
+>
+> - **位置**: 项目根目录
+> - **作用**: 指导 AI 如何使用本项目的 Agent、Skill 与工作流
+> - **优先级**: 用户指令 > AGENTS.md（Qoder 自动加载） > 默认行为
+> - **规则补充**: `.qoder/rules/*.md` 为可选增强层——文件已通过 `ak47 init` 拷入项目，但需在 Qoder IDE **Settings → Rules** 中逐条配置类型（始终生效/指定文件/模型决策）后才生效。未配置时不影响 AGENTS.md 自身的约束力。
+> - **配套规则**（按需配置）:
+>   - [`.qoder/rules/core-behavior.md`](.qoder/rules/core-behavior.md) — 跨场景硬规则
+>   - [`.qoder/rules/gate-control.md`](.qoder/rules/gate-control.md) — 人工确认门控点清单
+>   - [`.qoder/rules/spec-vertical-slicing.md`](.qoder/rules/spec-vertical-slicing.md) — Spec 垂直切片约束
+>   - [`.qoder/rules/workflow-state.md`](.qoder/rules/workflow-state.md) — OpenSpec 工作流状态机
 
 ---
 
 ## 📌 快速索引
 
-### 核心规则(每次必遵守)
-- 💬 反馈行为准则 → 第 166 行
-- 🔴 1% 规则 → 第 117 行
-- 🚦 Hook 警告必须响应 → 第 691 行
-- 🚫 禁止跳过 TDD → 第 682 行
-- 🚫 禁止臆想 API → 第 653 行
-- 🚫 禁止过度设计 → 第 669 行
-- 🚫 禁止表面修复 → 第 700 行
-
-### 场景化规则(按需查阅)
-| 场景 | 章节 | 行号 |
-|------|------|------|
-| Git 分支操作 | Git 工作流规则 | 216-289 |
-| OpenSpec 状态管理 | 工作流状态管理 | 291-514 |
-| Agent 分工决策 | Agent 分工原则 | 130-165 |
-| 知识沉淀 | 知识沉淀规则 | 568-625 |
-| 记忆管理 | 记忆管理规则 | 626-648 |
+| 主题 | 锚点 |
+|------|------|
+| 项目概述 | [🎯 项目概述](#-项目概述) |
+| Agent 清单 | [👥 可用 Agent](#-可用-agent) |
+| Skill 清单 | [🛠️ 可用 Skill](#️-可用-skill) |
+| Agent 分工决策 | [🧭 Agent 分工原则](#-agent-分工原则) |
+| Skills 使用（1% 规则） | [🚀 Skills 使用规则](#-skills-使用规则) |
+| 门控纪律 | [🚪 门控纪律](#-门控纪律) |
+| Git 工作流自动触发 | [🔄 Git 工作流规则](#-git-工作流规则) |
+| OpenSpec 工作流 | [📐 OpenSpec 工作流](#-openspec-工作流) |
+| 知识沉淀 | [📚 知识沉淀规则](#-知识沉淀规则) |
+| 记忆管理 | [🧠 记忆管理规则](#-记忆管理规则) |
+| 文件结构 | [📁 文件结构](#-文件结构) |
+| 模块规则索引 | [📋 模块规则索引](#-模块规则索引) |
 
 ---
 
@@ -34,498 +37,357 @@
 
 **AI 平台**: Qoder
 
+**工具链路径契约**:
+- 全局行为规则: `.qoder/rules/*.md`（需在 IDE 配置类型后生效，详见顶部"规则补充"说明）
+- Agent 定义: `.qoder/agents/*.md`
+- Skill 定义: `.qoder/skills/<category>/<name>/SKILL.md`
+- Command 定义: `.qoder/commands/<category>/<name>.md`
+- Hook 配置与脚本: `.qoder/settings.json` + `.qoder/hooks/*.sh`
+- 项目知识资产: `.ak47/experiences/`
+- 模块规则参考: `.ak47/rules/*.md`
+
+---
+
+## 🚀 Skills 使用规则
+
+### 会话启动时必须执行
+
+1. 加载 `ak47-using-skills` Skill 了解完整 Skills 体系
+2. 遵循 1% 规则
+
+> **注意**: Qoder 官方支持的 Hook 事件为 `UserPromptSubmit`、`PreToolUse`、`PostToolUse`、`PostToolUseFailure`、`Stop`。**不存在** `SessionStart` 事件，因此会话启动加载依赖 AI 主动执行，不能依赖 Hook 自动触发。
+
+### 1% 规则（强制）
+
+**如果有 1% 可能某个 Skill 适用，你必须调用它。** 这不是协商的，不是可选的。
+
+以下 Skill 涉及流程纪律，AI **不得**自行判断"不需要"而跳过：
+
+- `ak47-skill-entry-guard`：任何用户输入的第一步。禁止：自判"明显是修改请求"而跳过。
+- `ak47-skill-change-classification`：准备创建 OpenSpec Change 前或编写代码前。禁止：自判"变更简单不需要分类"。
+- `ak47-skill-triage-brief`：tasks.md 创建完成且变更规模超过阈值（工作量 > 2h / 跨模块 > 2 / 文件数 > 3 / 接口变更）。禁止：自判"不需要 Brief"直接跳过。
+- `ak47-skill-test-driven-development`：编写任何实现代码前；apply 阶段加载 openspec-apply-change 后。禁止：自判"功能简单不需要 TDD"跳过；看到 Hook TDD 警告后忽略继续编码；apply 阶段未检查 TDD Skill 是否已加载。
+- `ak47-skill-vertical-slicing`：创建 OpenSpec specs 前。禁止：自判"功能自然垂直"跳过；默认按组件水平切分。
+
+**跳过判定规则**: 如果 AI 认为当前场景不需要某个 Skill，必须：1) 明确说明原因；2) 询问用户是否同意跳过；3) 用户同意后才能跳过。
+
+清单规则: Skill 带 checklist 时，必须创建对应的 TodoWrite 任务逐项执行。
+
+---
+
+### Hook 警告必须响应
+
+Qoder Hook 输出的警告（stderr 中的 "CRITICAL" / "WARNING" 标记）不得忽略。**响应流程**: 停止当前操作，加载对应 Skill，补救，继续。
+
+- TDD 偏离（代码文件无对应测试文件）：加载 `ak47-skill-test-driven-development`，停止编码，补测试，通过后继续。
+- Artifacts 缺失（写代码前 proposal/design/specs/tasks 不齐）：加载 `openspec-propose` 或对应 artifact Skill，停止编码，补齐缺失 artifact，用户评审通过后继续。
+- Artifacts 全齐（proposal/design/specs/tasks 全部完成）：加载 `ak47-skill-critical-review`，停止推进，执行 critical-review，用户批准后 apply。
+- 缺少代码审查（Task 完成/提交前无审查记录）：加载 `ak47-skill-code-review` 或委托 `ak47-agent-reviewer`，停止提交，执行代码审查，审查通过后继续。
+- 测试覆盖不足（提交前 >30% 源码文件无测试）：加载 `ak47-skill-test-driven-development`，停止提交，补测试，覆盖达标后继续。
+- 文档缺失（关键文档未更新）：加载 `ak47-skill-critical-review`，停止提交，补文档，审查后继续。
+
+**禁止**: 看到 Hook 警告后继续操作，不加载对应 Skill 自行处理，忽略警告继续编码或提交。
+
+---
+
+## 🧭 Agent 分工原则
+
+> **核心原则**: Agent 分工基于"上下文连续性 vs 独立判断力"的权衡，而非教条的职责分工。
+
+**决策矩阵**:
+
+- 需要上下文连续性：主 Agent + Skill（主 Agent 拥有完整对话历史）
+- 需要独立判断力：子 Agent + Skill（子 Agent 无历史包袱）
+- 可以并发执行：多个子 Agent + Skill（子 Agent 可并行运行）
+
+**主 Agent 负责**: 产品需求讨论、代码设计与编写、即时经验沉淀、架构决策。
+
+**子 Agent 负责**: 审查类任务、并发独立任务、专业领域深度分析、跨会话经验整理。
+
+**子 Agent 的正确定位**:
+- 子 Agent 是"效率工具"（并发执行、缩短总耗时），不是"职责分工"
+
+**判断标准**: 如果任务需要"记得之前说过什么"，用主 Agent。
+
+**委托话术**:
+- 正确示例："检测到 5 个 Task 互不依赖，可分配给 3 个 Code Agent 并行开发。是否开始？"
+- 错误示例："根据职责分工，产品需求应由 Product Agent 编写。"
+
 ---
 
 ## 👥 可用 Agent
 
-- **ak47-agent-architect** (`ak47-agent-architect`)
-  ak47 系统架构师,负责 Spec 拆分、依赖排序、技术路径设计与架构评审
+项目内共 **9 个** Agent，定义位于 `.qoder/agents/`：
 
-- **ak47-agent-config-maintainer** (`ak47-agent-config-maintainer`)
-  ak47 配置维护者,负责 .ak47 目录结构治理、配置一致性与版本管理
-
-- **ak47-agent-developer** (`ak47-agent-developer`)
-  ak47 开发者,负责 Spec Task 实现、代码编写与单元测试
-
-- **ak47-agent-knowledge-engineer** (`ak47-agent-knowledge-engineer`)
-  ak47 知识工程师,负责经验沉淀、ADR 维护、知识冲突裁决与 FAQ 管理
-
-- **ak47-agent-po** (`ak47-agent-po`)
-  ak47 产品负责人,负责需求澄清、验收标准定义、优先级排序与需求评审
-
-- **ak47-agent-process-guardian** (`ak47-agent-process-guardian`)
-  ak47 流程守护者,负责范式执行、规则遵守、偏离记录与流程审计
-
-- **ak47-agent-reviewer** (`ak47-agent-reviewer`)
-  ak47 审查专家,负责代码审查、质量评估、反模式检测与改进建议
-
-- **ak47-agent-scaffold-maintainer** (`ak47-agent-scaffold-maintainer`)
-  ak47 脚手架资产维护者,负责 ak47 生成资产的通用性审计、导出/导入验证与权限治理
+| Agent | 职责 |
+|-------|------|
+| `ak47-agent-architect` | 系统架构师 — Spec 拆分、依赖排序、技术路径、架构评审 |
+| `ak47-agent-config-maintainer` | 配置维护者 — `.ak47/` 目录治理、配置一致性、版本管理 |
+| `ak47-agent-ddd` | 领域建模师 — 领域驱动设计、限界上下文、聚合设计 |
+| `ak47-agent-developer` | 开发者 — Spec Task 实现、代码编写、单元测试 |
+| `ak47-agent-knowledge-engineer` | 知识工程师 — 经验沉淀、ADR 维护、知识冲突裁决 |
+| `ak47-agent-po` | 产品负责人 — 需求澄清、验收标准、优先级、评审 |
+| `ak47-agent-process-guardian` | 流程守护者 — 范式执行、规则遵守、偏离记录、流程审计 |
+| `ak47-agent-reviewer` | 审查专家 — 代码审查、质量评估、反模式检测 |
+| `ak47-agent-scaffold-maintainer` | 脚手架维护者 — 生成资产通用性审计、导入导出验证 |
 
 ---
 
 ## 🛠️ 可用 Skill
 
-### ak47 核心 Skills
+项目内共 **30 个** Skill，按类别组织于 `.qoder/skills/`：
 
-- **ak47-skill-entry-guard** - 入口判定:判断用户请求属于答疑/轻量修改/重量修改
-- **ak47-skill-change-classification** - 变更分类:判定重量修改进入 L1/L2/L3 哪个范式
-- **ak47-skill-requirements-definition** - 需求定义:创造性工作前的深度需求盘问
-- **ak47-skill-architecture-design** - 架构设计:需求批准后的技术方案设计
-- **ak47-skill-critical-review** - 批判性审核:文档存档前的独立审查
-- **ak47-skill-experience-summarization** - 经验总结:从实践中识别、提炼、归档可复用经验
-- **ak47-skill-knowledge-retrieval** - 知识检索:系统化检索 `.ak47/experiences/` 中的知识资产
-- **ak47-skill-knowledge-research** - 知识调研:系统化执行外部技术调研与信息评估
-- **ak47-skill-harness-design** - 架构设计:七层架构方法论,指导系统分层设计与层间依赖分析
-- **ak47-skill-anti-patterns** - 反模式检查:覆盖设计、实现、流程三类反模式速查表
-- **ak47-skill-triage-brief** - 任务简报:生成结构化的 Agent 任务说明
-- **ak47-skill-domain-modeling** - 领域建模:复杂业务领域的模型设计
-- **ak47-skill-vertical-slicing** - 垂直切片:将功能拆分为可独立交付的垂直切片
-- **ak47-skill-improve-architecture** - 架构改进:现有架构的优化与重构
-- **ak47-skill-code-review** - 代码审查:代码质量评估与改进建议
-- **ak47-skill-terminology-management** - 术语管理:专业术语的统一翻译与管理
-- **ak47-skill-prototype** - 原型设计:快速原型验证
-- **ak47-skill-zoom-out** - 全局视角:跳出细节看整体架构
-- **ak47-skill-improvement-proposal** - 改进提案:深度诊断 AK47 行为问题，产出结构化改进建议，区分普适性缺陷与项目特有问题
-- **ak47-skill-improvement-audit** - 改进审核:审核改进提案，交叉判断 AK47 设计原则与用户项目诉求的合理性
+### ak47 核心（`ak47-core/`，8 个）
 
-### 工程实践 Skills
+| Skill | 用途 |
+|-------|------|
+| `ak47-skill-entry-guard` | 入口判定 — 答疑/轻量/重量分流 |
+| `ak47-skill-change-classification` | 变更分类 — 判定 L1/L2/L3 范式 |
+| `ak47-skill-anti-patterns` | 反模式速查 — 设计/实现/流程三类 |
+| `ak47-skill-harness-design` | 七层架构方法论 |
+| `ak47-skill-experience-summarization` | 经验总结 — 识别/提炼/归档可复用经验 |
+| `ak47-skill-knowledge-retrieval` | 知识检索 — 系统化检索 `.ak47/experiences/` |
+| `ak47-skill-knowledge-research` | 知识调研 — 外部技术调研与信息评估 |
+| `ak47-using-skills` | Skills 体系概览与加载导航 |
 
-- **ak47-skill-test-driven-development** - TDD:融合垂直切片+行为测试+用户确认循环
-- **ak47-skill-systematic-debugging** - 系统调试:6 阶段调试循环
-- **ak47-skill-writing-plans** - 编写计划:融入 triage-brief 流程
-- **ak47-skill-executing-plans** - 执行计划:流程集成 (TODO→IN_PROGRESS→DONE)
-- **ak47-skill-writing-skills** - 编写Skill:创建/编辑 Skill 文档
+### Engineering（`engineering/`，11 个）
 
-> **完整列表**: 通过调用 `ak47-using-skills` 了解完整的 27 个 Skills 体系和使用方法。
+`ak47-skill-architecture-design` · `ak47-skill-code-review` · `ak47-skill-critical-review` · `ak47-skill-domain-modeling` · `ak47-skill-improve-architecture` · `ak47-skill-requirements-definition` · `ak47-skill-systematic-debugging` · `ak47-skill-test-driven-development` · `ak47-skill-triage-brief` · `ak47-skill-vertical-slicing` · `ak47-skill-writing-skills`
+
+### Productivity（`productivity/`，4 个）
+
+`ak47-skill-executing-plans` · `ak47-skill-finishing-a-development-branch` · `ak47-skill-using-git-worktrees` · `ak47-skill-writing-plans`
+
+### OpenSpec（`openspec/`，4 个）
+
+`openspec-propose` · `openspec-apply-change` · `openspec-archive-change` · `openspec-explore`
+
+### Misc（`misc/`，3 个）
+
+`ak47-skill-prototype` · `ak47-skill-terminology-management` · `ak47-skill-zoom-out`
 
 ---
 
-## 🛠️ Skill 使用原则
+## 🚪 门控纪律（人工确认断点）
 
-### 会话启动时
+**所有阶段性产出必须通过人工确认门控才能推进到下一阶段。** 用户的一句"继续"只授权当前讨论的继续，不授权跳过任何门控。
 
-**无论任务类型，会话开始后第一次响应前必须执行**：
+### 门控点清单
 
-1. 调用 `ak47-using-skills` Skill - 了解完整的 27 个 Skills 体系和使用方法
-2. 遵循 1% 规则 - 有任何可能适用某个 Skill 时都必须调用
+| # | 门控点 | 触发条件 | 确认问法 |
+|---|--------|----------|----------|
+| G1 | 需求理解确认 | 需求盘问完成 | "需求理解是否正确？是否可以进入变更分类？" |
+| G2 | 变更分类确认 | 变更分类完成 | "当前变更判定为 L{X}，对应流程强度为 {强度}，是否确认？" |
+| G3 | proposal 评审 | `proposal.md` 创建完成 | "proposal 已创建，是否通过评审？" |
+| G4 | design 评审 | `design.md` 创建完成 | "design 已创建，是否通过评审？" |
+| G5 | specs 评审 | `specs/` 创建完成 | "specs 是否按垂直切片组织？是否覆盖所有需求？" |
+| G6 | tasks 评审 | `tasks.md` 创建完成 | "tasks 拆分是否合理？粒度是否合适？" |
+| G7 | 批判性审核 | tasks 评审通过后 | "是否确认进入实施阶段？" |
+| G8 | 代码审查 | 代码编写完成 | "是否启动代码审查？" |
+| G9 | 审查通过 | 代码审查完成 | "审查通过，是否提交代码？" |
+| G10 | 功能验收 | 功能开发完成 | "是否启动验收测试？" |
+| G11 | 分支处理 | 测试通过 | "是否合并分支/创建 PR？" |
 
-> **重要**: 此要求通过 SessionStart Hook 自动触发，但即使 Hook 未触发，你也必须主动执行。
+### 范式与门控强度
 
-### 强制规则
+| 门控 | L1（需求驱动） | L2（技术实现） | L3（缺陷修复） |
+|------|:---:|:---:|:---:|
+| G1 需求确认 | ● | ● | ○ 可跳过 |
+| G2 变更分类 | ● | ● | ● |
+| G3 proposal | ● | ● | ○ 可合并到 G2 |
+| G4 design | ● | ● | ○ 可跳过 |
+| G5 specs | ● | ● | ○ 可跳过 |
+| G6 tasks | ● | ● | ● |
+| G7 批判性审核 | ● | ● | ○ 简化审核 |
+| G8-G11 实施/收尾 | ● | ● | ● |
 
-**1% 规则**：如果有 1% 可能某个 Skill 适用，你必须调用它。
+> ● = 必须执行　　　○ = 可选/简化
 
-**清单规则**：如果 Skill 有 checklist，必须创建 TodoWrite 任务。
+### 确认格式规范
 
-**执行规则**：调用 Skill 后，必须按 Skill 指示执行。
+- 必须：使用明确询问句式，说明当前状态和下一步
+- 必须：等待用户明确回复（"通过"/"确认"/"是"/"需要修改"）
+- 必须：一次只等待一个门控点的确认
+- 禁止：陈述句代替询问（"我继续创建 design 了"）
+- 禁止：假设用户同意（"没问题的话我就继续了"）
+- 禁止：将同一门控点多 artifact 合并询问（"proposal 和 design 都好了，一起通过吗？"）
 
-**禁止跳过**：
-- ❌ "这个场景不太需要 TDD，我直接写代码吧"
-- ❌ "错误很明显，不需要系统调试"
-- ❌ "功能简单，不用头脑风暴"
+### 偏离处理
 
----
-
-## 👥 Agent 分工原则
-
-> **核心原则**: Agent 分工应基于"上下文连续性 vs 独立判断"的权衡,而非教条的职责分工。
-
-**决策矩阵**:
-
-| 场景特征 | 推荐方案 | 原因 |
-|---------|---------|------|
-| 需要上下文连续性 | 主Agent + Skill | 主Agent 拥有完整对话历史 |
-| 需要独立判断力 | 子Agent + Skill | 子Agent 无历史包袱 |
-| 可以并发执行 | 多个子Agent + Skill | 子Agent 可并行运行 |
-
-**主Agent 负责的场景**:
-- 产品需求讨论与编写(需要对话历史)
-- 代码设计与编写(需要理解项目整体)
-- 经验沉淀(即时上下文场景)
-- 架构决策(需要权衡历史背景)
-
-**子Agent 负责的场景**:
-- 审查类任务(Code Review、Spec 评审)
-- 并发执行任务(独立 Spec 编写、多 Task 编码)
-- 专业领域深度分析(安全审计、性能分析)
-- 跨会话/跨项目的经验整理
-
-**子Agent 的正确定位**:
-- ✅ 子Agent 是"效率工具"(并发执行、缩短总耗时)
-- ❌ 子Agent 不是"职责分工"
-
-**判断标准**: 如果任务需要"记得之前说过什么",用主Agent。
-
-**委托话术示例**:
-- ✅ "检测到 5 个 Task 互不依赖,可以分配给 3 个 Code Agent 并行开发。是否开始?"
-- ❌ "根据职责分工,产品需求应由 Product Agent 编写。"(错误:忽略上下文优势)
+任何门控点如需跳过，必须：
+1. 说明跳过原因（仅限紧急修复/用户明确要求）
+2. 明确告知用户跳过了哪个门控点
+3. 记录到 `.ak47/deviations.log`
+4. 获得用户明确批准后方可跳过
 
 ---
 
-## 💬 反馈行为准则
+### Spec 垂直切片强制规则
 
-**核心原则：建设性直率反馈（Constructive Directness）**
+**每个 Spec 必须描述一个端到端可独立演示和验证的用户价值路径，禁止按技术组件/层次水平切分。**
 
-### 必须做到
+- 必须：按"端到端用户价值"垂直切分，从输入到输出，穿越所有技术层
+- 必须：每个 spec 描述一个可独立编译、测试、验证的完整行为路径
+- 禁止：按技术组件单独建 spec（如 Fetcher、Extractor、Classifier）
+- 禁止：按技术层次单独建 spec（如 API 层、Service 层、DAO 层）
+- 禁止：按模块/包名单独建 spec（如 pipeline-core、entity-matching）
 
-1. **直接指出问题**：发现错误/风险立即说明，不要铺垫或弱化
-2. **证据驱动**：用事实和数据支撑观点（"因为 X 证据表明..."）
-3. **提供替代方案**：指出问题的同时给出具体改进建议
-4. **分级反馈**：
-   - 🔴 **Critical**（必须修复）：有严重问题或风险
-   - 🟡 **Important**（建议修复）：有问题但可接受
-   - 🟢 **Optional**（可选优化）：锦上添花的改进
-5. **尊重意图，质疑方法**：肯定目标，但直接指出实现方式的问题
-
-### 禁止使用
-
-- ❌ 讨好性表达："你的问题很好""我完全同意"（除非确实如此）
-- ❌ 过度道歉："抱歉，但是..."（直接说问题）
-- ❌ 无意义奉承："这个想法很棒"（没有实质内容）
-- ❌ 弱化问题："可能有个小问题"（有问题就直接说）
-- ❌ 对抗性否定："你错了"（没有解释和方案）
-
-### 反馈格式示例
-
-```markdown
-🔴 **Critical**: 方案 A 会导致性能问题
-- **位置**: 架构设计 3.2
-- **问题**: 同步调用第三方 API 会在高并发时阻塞
-- **证据**: 第三方 API P99 延迟 2s，当前设计无降级策略
-- **建议**: 改用异步队列 + 本地缓存，参考方案 B
-```
-
-### 语气要求
-
-- **专业**：基于技术和逻辑，不情绪化
-- **中性**：不迎合用户观点，也不故意对抗
-- **建设性**：每个问题都附带改进方向
-- **简洁**：不说废话，直奔主题
-
-**关键区分**:
-```
-❌ 讨好型: "你的想法很好！不过可能有个小问题..."
-❌ 对抗型: "你错了，这样做不行。"
-✅ 建设性: "这个方案的目标是 X，但实现方式有问题：Y 会导致 Z 风险。
-           建议改用 A 方案，因为 B 证据表明它能避免这个问题。"
-```
+`ak47-skill-critical-review` 执行时必须检查：每个 Spec 是否描述端到端用户价值？是否按技术组件水平切分？（若是则为致命问题，必须重新切分）
 
 ---
 
-## 🔄 Git 工作流自动触发规则
+## 🔄 Git 工作流规则
 
-> **重要**: 以下规则在特定场景**自动触发**，不可跳过或简化。
+> 以下规则在特定场景**自动触发**。
 
-### 规则 1: 开始新功能时必须创建分支
+### 规则 1: 开始新功能前必须创建分支
 
-**触发条件**：收到任何开发任务（写代码、修 bug、加功能、重构）
+**触发条件**: 收到任何开发任务（写代码、修 bug、加功能、重构）。
 
-**必须执行**：
-1. 检查当前分支是否是 master/main
-2. 如果是 → **立即调用** `using-git-worktrees` Skill 创建功能分支
-3. 如果不是 → 确认分支命名是否符合规范：
-   - 新功能：`feat/<功能描述>`
-   - Bug 修复：`fix/<问题描述>`
-   - 重构：`refactor/<重构范围>`
-   - 文档：`docs/<文档内容>`
+**必须执行**:
+1. 检查当前分支是否是 `master` / `main`
+2. 若是 → 立即调用 `ak47-skill-using-git-worktrees` 创建功能分支
+3. 分支命名规范：
+   - 新功能：`feat/<描述>`
+   - Bug 修复：`fix/<描述>`
+   - 重构：`refactor/<范围>`
+   - 文档：`docs/<内容>`
 
-**禁止行为**：
-- ❌ 在 master/main 分支上直接开发
-- ❌ 使用不规范的分支命名（如 `my-branch`、`test`）
-- ❌ 跳过分支创建直接写代码
+**禁止**:
+- 禁止：在 `master`/`main` 上直接开发
+- 禁止：使用不规范的分支命名（如 `my-branch`、`test`）
 
 ### 规则 2: 完成 Task 后必须提交
 
-**触发条件**：executing-plans 中一个 Task 标记为完成
-
-**必须执行**：
-1. 运行相关测试，确保全部通过
-2. 调用 `verification-before-completion` Skill 验证
-3. 使用 Conventional Commits 格式提交（description 使用中文）：
-   ```
-   <type>(<scope>): <中文描述>
-   
-   [optional body]
-   ```
+**必须执行**:
+1. 运行相关测试
+2. 调用 `ak47-skill-verification-before-completion` 验证（若存在）
+3. 使用 Conventional Commits 格式：`<type>(<scope>): <description>`
+   - description 使用中文（AK47 生成的项目默认中文）
    - type 仅限：feat / fix / docs / style / refactor / perf / test / build / ci / chore / revert
    - scope 使用小写英文+连字符（如 `init`、`config-manager`）
-   - description 用中文简明描述变更内容
-4. 提交前自查清单：
-   - [ ] 代码编译通过
-   - [ ] 测试全部通过
-   - [ ] Lint 检查通过
-   - [ ] 提交信息格式正确
-   - [ ] description 为中文
-   - [ ] 没有遗漏的文件
+   - description 简明扼要，不超过 72 字符，不以句号结尾
+4. 提交前自查：编译通过 / 测试通过 / Lint 通过 / 信息格式正确 / description 为中文 / 无遗漏文件
 
-**禁止行为**：
-- ❌ Task 完成不提交
-- ❌ 积累多个 Task 才提交
-- ❌ 使用模糊的提交信息（如 "update"、"fix"）
-- ❌ description 用英文
-- ❌ description 以句号结尾
+**禁止**:
+- 禁止：Task 完成不提交
+- 禁止：积累多个 Task 才提交
+- 禁止：使用模糊的提交信息（如 "update"、"fix"）
+- 禁止：description 以句号结尾
 
 ### 规则 3: 功能开发完成后必须处理分支
 
-**触发条件**：声明"功能开发完成"或"所有测试通过"
+**必须执行**:
+1. 调用 `ak47-skill-finishing-a-development-branch`
+2. 验证：测试通过 / 代码审查通过 / 文档已更新
+3. 选择处理方式：合并到 master / 创建 PR / 保留分支 / 丢弃分支
 
-**必须执行**：
-1. **调用** `finishing-a-development-branch` Skill
-2. 按 Skill 流程验证：
-   - [ ] 所有测试通过
-   - [ ] 代码审查通过（如需要）
-   - [ ] 文档已更新
-3. 选择分支处理方式：
-   - **合并到 master**：功能完整，直接合并
-   - **创建 PR/MR**：需要审查，创建合并请求
-   - **保留分支**：功能未完成，后续继续
-   - **丢弃分支**：方案废弃，清理分支
+**禁止**:
+- 禁止：不处理分支就声明完成
+- 禁止：跳过测试验证直接合并
+- 禁止：留下孤立开发分支
 
-**禁止行为**：
-- ❌ 不处理分支就声明完成
-- ❌ 跳过测试验证直接合并
-- ❌ 留下孤立的开发分支
 ---
 
-## 🔄 工作流状态管理规则
+## 📐 OpenSpec 工作流
 
-> **重要**: 本规则定义如何追踪和引导项目工作流状态，支持非线性工作流（回退、并行）。
+### 状态三层模型
 
-### 状态查询规则
+- **Artifact 状态**: `not-started` / `drafting` / `completed` / `needs-revision`
+- **Change 状态**: `proposing` / `specing` / `designing` / `tasking` / `implementing` / `testing` / `reviewing` / `ready-to-archive` / `archived`
+- **Project 状态**: `idle` / `planning` / `developing` / `reviewing` / `completed`
 
-**触发条件**：用户输入 `/status`、`/next-step` 或会话开始
+状态**永远基于最新文件内容实时推断**（`always-refresh`），不依赖缓存。
 
-**必须执行**：
-1. 扫描 `openspec/changes/` 目录，列出所有 Change
-2. 对每个 Change，分析 Artifact 完成度：
-   - `proposal.md`：检查是否包含 "## Intent" 和 "## Scope"
-   - `specs/*/spec.md`：检查是否包含 "## Requirements" 和 "Scenario:"
-   - `design.md`：检查是否包含 "## Architecture"
-   - `tasks.md`：统计 `- [x]` 占比
-3. 推断三层状态：
-   - **Artifact 状态**：not-started / drafting / completed / needs-revision
-   - **Change 状态**：proposing / specing / designing / tasking / implementing / testing / reviewing / ready-to-archive / archived
-   - **Project 状态**：idle / planning / developing / reviewing / completed
-4. 输出状态概览和下一步建议
+### 速查命令
 
-**状态同步保证**：
-- 默认模式：每次查询都重新推断（`always-refresh`）
-- 状态永远基于最新文件内容
-- 不依赖可能过期的缓存
-
-**输出格式**：
-```
-📊 项目状态概览
-
-Project: {projectState}（{activeChanges} 个 Change 活跃）
-
-Change 状态:
-  {changeDetails}
-
-💡 建议操作:
-  {suggestedActions}
-```
+- 查询状态：`/status` 或 `/next-step`
+- 创建 Change：`/opsx:propose <name>`
+- 继续某环节：`/opsx:continue <change> <proposal|specs|design|tasks>`
+- 归档：`/opsx:archive <change>`
+- 解除阻塞：`/unblock <change>`
 
 ### 状态回退规则
 
-**触发条件**：用户表示"架构调整"、"需求变更"、"重新设计"、"方案不对"、"需要回退"
+**触发条件**: 用户表示"架构调整"、"需求变更"、"重新设计"、"方案不对"、"需要回退"。
 
-**必须执行**：
-1. 识别需要回退的层级：
-   - 技术设计问题 → 回退到 designing
-   - 需求规范问题 → 回退到 specing
-   - 方向错误 → 回退到 proposing 或创建新 Change
-2. 提示用户影响的下游 Artifact：
-   - designing → 影响 tasks.md
-   - specing → 影响 design.md 和 tasks.md
-   - proposing → 影响所有下游 Artifact
-3. 建议更新顺序：回退层 → 依赖层
-4. 提供具体命令建议：
-   - 更新 design：`/opsx:continue <change> design`
-   - 更新 specs：`/opsx:continue <change> specs`
-   - 更新 proposal：`/opsx:continue <change> proposal`
+**执行**:
+1. 识别需回退的层级：
+   - 技术设计问题 → 回退到 `designing`
+   - 需求规范问题 → 回退到 `specing`
+   - 方向错误 → 回退到 `proposing` 或创建新 Change
+2. 提示用户影响的下游 Artifact，建议更新顺序：回退层 → 依赖层
+3. 重大方向调整时创建新 Change，不修改原 Change
 
-**禁止行为**：
-- ❌ silently 回退而不告知用户影响
-- ❌ 跳过下游 Artifact 更新
-- ❌ 在重大方向调整时建议修改原 Change（应创建新 Change）
+**禁止**: silently 回退而不告知用户影响 / 跳过下游 Artifact 更新。
 
-### 状态同步与冲突避免规则
+### 阻塞检测
 
-**核心原则**：
-1. 状态永远基于最新文件内容（实时推断）
-2. 使用 Git 的分支/merge 机制解决冲突
-3. 不自己实现锁（Git 已提供完整方案）
+会话开始或状态查询时，检查 `implementing` 状态的 Change：
+- 最后活动时间超过 2 天未更新且完成率 < 50% → 主动提示阻塞、询问是否遇到问题、提供 `/unblock` 建议。
 
-**禁止行为**：
-- ❌ 在 main 分支直接编辑 Change（应用 feat/ 分支）
-- ❌ 跳过 Git 提交（频繁提交保持历史清晰）
-- ❌ 手动修改 workflow-state.yaml 的状态字段
-- ❌ 自己实现锁机制（用 Git 分支）
+### 老项目接入
 
-**最佳实践**：
-- ✅ 每个 Change 一个 Git 分支
-- ✅ 完成一个阶段就提交
-- ✅ 随时查询状态（永远准确）
-- ✅ 冲突时用 Git 标准流程解决
-- ✅ 归档时合并到 main 分支
+检测到项目有代码但 `openspec/specs/` 为空时，提供三种策略供用户选择：
+- **策略 1（推荐）**: 增量接入 — 新功能走完整 OpenSpec 流程，老功能暂不处理
+- **策略 2**: 基线快照 — 逆向工程为现有代码创建 Spec 基线
+- **策略 3**: 混合模式 — 已规范模块放 `openspec/specs/`，待规范模块放 `openspec/legacy/`
 
-### 多 Change 并行规则
+### 硬性约束
 
-**触发条件**：检测到多个 Change 同时存在（`openspec/changes/` 下 > 1 个目录）
-
-**必须执行**：
-1. 列出所有活跃 Change 及状态
-2. 标识优先级（按以下顺序）：
-   - 最接近完成（implementing 且 task 完成率高）
-   - 阻塞中（超过 2 天未更新）
-   - 刚开始（proposing/specing）
-3. 建议聚焦策略：
-   - 优先推进最接近完成的 Change
-   - 避免频繁上下文切换
-   - 阻塞的 Change 可以暂时搁置
-4. 检测资源冲突：
-   - 检查多个 Change 是否修改同一文件
-   - 提示潜在合并冲突风险
-
-**输出格式**：
-```
-📊 当前有 {count} 个 Change 并行开发：
-
-  ✅ change-A    implementing  (进度: 6/8 tasks)
-  🔄 change-B    specing       (等待需求明确)
-  ⏳ change-C    proposing     (等待评审)
-
-建议策略：
-  1. 优先推进 change-A（最接近完成）
-  2. change-B 需求明确后继续
-  3. change-C 等待评审反馈
-```
-
-### 阻塞检测规则
-
-**触发条件**：会话开始或状态查询时
-
-**必须执行**：
-1. 检查每个 implementing 状态的 Change：
-   - 最后活动时间（文件修改时间）
-   - 任务完成进度（tasks.md 中 `- [x]` 占比）
-2. 如果超过 2 天未更新且完成率 < 50%：
-   - 主动提示阻塞状态
-   - 询问是否遇到问题
-   - 提供协助建议（`/unblock` 命令）
-
-### 关键节点主动推送规则
-
-**触发时机**：
-| 场景 | 触发条件 |
-|------|----------|
-| 会话开始 | 读取工作流状态，摘要当前进展 |
-| Change 状态变化 | 检测到 Artifact 更新，提示下一步 |
-| 任务完成 | 标记 task `[x]` 后，提示下一个 task |
-| 阻塞检测 | 超过 2 天未活动，主动提醒 |
-
-**推送格式**：
-```
-💡 下一步建议：
-  当前：{currentState}
-  建议：{nextAction}
-  命令：{command}
-```
-
-### 老项目处理规则
-
-**触发条件**：检测到项目有代码但无 Spec 基线
-
-**必须执行**：
-1. 识别项目类型：
-   - 检查是否有 `src/`、`app/` 等代码目录
-   - 检查 `openspec/specs/` 是否为空
-   - 判断：有代码 + 无 Spec = 老项目
-
-2. 提供三种接入策略供用户选择：
-
-   **策略 1: 增量接入（推荐）**
-   ```
-   做法：
-     - 新功能使用完整 OpenSpec 流程
-     - 老功能暂不处理
-     - 逐步积累 Spec
-   ```
-
-   **策略 2: 基线快照**
-   ```
-   做法：
-     - 逆向工程，为现有代码创建 Spec 基线
-     - 创建 Change: baseline-current-state
-     - 所有后续变更基于基线
-   ```
-
-   **策略 3: 混合模式**
-   ```
-   做法：
-     - 已规范模块：openspec/specs/
-     - 待规范模块：openspec/legacy/
-     - 创建迁移计划：legacy/migration-plan.md
-   ```
-
-3. 根据用户选择执行对应策略
-
-**禁止行为**：
-- ❌ 强制要求老项目一次性完整迁移
-- ❌ 在迁移期间停止新功能开发
-- ❌ 忽略迁移进度追踪
-
-### 已完成项目新周期规则
-
-**触发条件**：项目状态为 `completed`，用户表示要"调整功能"、"新功能"、"新需求"
-
-**必须执行**：
-1. 识别用户意图：
-   - 调整现有功能 → 创建 Change: `adjust-<feature-name>`
-   - 添加新功能 → 创建 Change: `add-<feature-name>`
-   - 重构代码 → 创建 Change: `refactor-<scope>`
-   - 大版本更新 → 创建 Change: `v2.0-<description>`
-
-2. 说明状态流转：
-   ```
-   当前状态：completed（所有 Change 已归档）
-   创建新 Change 后：planning（规划中）
-   开始实施后：developing（开发中）
-   完成后归档：completed（再次完成）
-   ```
-
-3. 引导创建新 Change：
-   ```bash
-   /opsx:propose <change-name>
-   ```
-
-**重要说明**：
-- `completed` 不是终态，而是"当前无活跃工作"的临时状态
-- 项目可以无限次从 `completed` 进入新的开发周期
-- 每次归档后，历史 Change 保留在 `openspec/changes/archive/` 中
-
-**禁止行为**：
-- ❌ 认为 completed 是终态，不允许继续开发
-- ❌ 不创建 Change 直接修改代码
-- ❌ 不清零状态，累积多个版本的任务
+- 禁止：在 `master`/`main` 上直接编辑 Change（应用 `feat/` 分支）
+- 禁止：手动修改 `workflow-state.yaml` 的状态字段
+- 禁止：`completed` 后累积任务不清零（应创建新 Change）
 
 ---
 
-## 🚦 使用规则
+## 📚 知识沉淀规则
 
-### Agent 调用
+> **触发条件**（任一即自动触发）:
+> - 完成工具/框架官网调研后
+> - 解决 P0/P1 级 Bug 后
+> - 做出重要技术决策后
+> - 发现可复用的最佳实践或反模式后
 
-- Agent 由系统自动调度或用户显式调用
-- 每个 Agent 有明确的职责边界，不可越权
-- Agent 输出格式由 ak47 的 Prompt 模板定义
+### 场景 A：主 Agent + `ak47-skill-experience-summarization`
 
-### Skill 使用
+**适用**: 经验来自当前会话（上下文连续）/ 需要理解推理过程 / 即时沉淀。
 
-- Skill 在特定场景下必须使用（如 TDD、调试等）
-- 遵循 Skill 文档中的流程和 checklist
-- 不可跳过或简化 Skill 流程
+**执行**: 主 Agent 加载 Skill → 基于上下文识别、提炼、结构化 → 可选委托 KE 做冲突检测和归档。
+
+### 场景 B：`ak47-agent-knowledge-engineer` + `ak47-skill-experience-summarization`
+
+**适用**: 需要对比历史经验（冲突检测）/ 跨会话模式识别 / 需要专业裁决 / 定期整理。
+
+**执行**: 主 Agent 委托 KE → 传递关键上下文 → KE 独立完成分析、提炼、冲突检测、归档。
+
+**禁止**:
+- 禁止：调研完成不沉淀知识
+- 禁止：主 Agent 在无上下文优势时越俎代庖（应委托 KE）
+- 禁止：KE 代替专业角色做技术判断
+- 禁止：记录未经验证的假设
+
+**知识检索入口**: `.ak47/experiences/trigger-guide.md`（首次由 AI 从系统模板创建）。
+
+---
+
+## 🧠 记忆管理规则
+
+**记忆隔离原则**:
+- 每个 Agent 只能读取自己的专属记忆（`agent:{角色简写}:*`）和共享记忆（`agent:shared:*`）
+- 禁止越权读取其他 Agent 的专属记忆
+- 使用 `search_memory` 时必须指定正确的 category 参数
+
+**记忆写入原则**:
+- 用户明确要求时才写入（如"请记住..."）
+- 必须标注完整 keywords（角色:领域,type,频率）
+- 临时记忆（`session-context`）必须设置 `expires_at`
+- 禁止写入未经验证的假设或矛盾内容
+
+**记忆检索原则**:
+- 优先检索高频记忆（`frequency:high`）
+- 按任务类型检索对应领域（如编码任务查 `:coding`）
+- 专属记忆不足时检索共享记忆补充
 
 ---
 
@@ -536,195 +398,74 @@ Change 状态:
 ├── config.yaml          # ak47 项目配置
 ├── custom-configs.yaml  # 自定义配置
 ├── progress.yaml        # 进度跟踪
-├── experiences/         # 知识资产库（项目自身知识）
-│   ├── index.md         # 知识索引
-│   ├── trigger-guide.md # 检索触发指南
-│   ├── tool-research/   # 工具调研报告
-│   ├── best-practices/  # 最佳实践
-│   ├── pitfall-records/ # 踩坑记录
-│   └── decisions/       # 架构决策记录
-└── templates/           # ak47 系统模板（可选）
+├── rules.md             # 本项目硬规则（汇总）
+├── rules/               # 模块级规则文件（按需查阅）
+├── experiences/         # 知识资产库（渐进式创建）
+│   ├── index.md
+│   ├── trigger-guide.md
+│   ├── tool-research/
+│   ├── best-practices/
+│   ├── pitfall-records/
+│   └── decisions/
+└── templates/           # ak47 系统模板
 
 .qoder/
-├── agents/              # Qoder Agent 配置
-├── skills/              # Qoder Skill 配置
-│   ├── ak47-core/       # ak47 核心 Skills（6个）
-│   ├── engineering/     # 工程实践 Skills
-│   ├── productivity/    # 效率工具 Skills
-│   ├── misc/            # 辅助 Skills
-│   └── openspec/        # OpenSpec Skills
-├── commands/            # Qoder 命令
-└── settings.json        # Hook 配置
+├── agents/              # Agent 定义（9 个）
+├── skills/              # Skill 定义（30 个，目录+SKILL.md 结构）
+│   ├── ak47-core/
+│   ├── engineering/
+│   ├── productivity/
+│   ├── openspec/
+│   └── misc/
+├── commands/            # 自定义命令
+├── hooks/               # Hook 脚本（shell）
+├── rules/               # 可选增强规则（需 IDE 手动配置类型后生效）
+│   ├── core-behavior.md
+│   ├── gate-control.md
+│   ├── spec-vertical-slicing.md
+│   └── workflow-state.md
+└── settings.json        # Hook 绑定
 
 openspec/                # OpenSpec 规范
-├── changes/             # 变更管理
-└── specs/               # 规范文档
+├── changes/
+└── specs/
 ```
 
 ---
 
-## ⚠️ 强制规则
+## 📋 模块规则索引
 
-### 知识沉淀规则（按场景分流）
+> **说明**: Qoder 不支持基于 frontmatter 的路径过滤，模块规则需 AI **主动查阅**。
 
-> **重要**: 经验沉淀根据场景特性选择执行主体，平衡上下文连续性与专业判断力。
+**查阅时机**: 处理对应模块时。
 
-**触发条件**（满足任一即自动触发）：
-- 完成工具/框架官网调研后
-- 解决 P0/P1 级 Bug 后
-- 做出重要技术决策后
-- 发现可复用的最佳实践或反模式后
+| 编辑对象 | 查阅规则 | 位置 |
+|---------|---------|------|
+| `src/cli/**/*` | CLI 规则 | `.ak47/rules/cli-rules.md` |
+| `src/core/**/*` | 核心架构规则 | `.ak47/rules/core-architecture-rules.md` |
+| `tests/**/*` | 测试规则 | `.ak47/rules/test-rules.md` |
+| `src/types/**/*` | 类型规则 | `.ak47/rules/types-rules.md` |
+| `docs/**/*` | 文档规则 | `.ak47/rules/docs-rules.md` |
 
-**场景分流规则**：
+### 强制规则（通过 Hooks 警告）
 
-#### 场景A：主Agent + experience-summarization Skill
+| 规则 | Hook 事件 | 脚本 |
+|------|----------|------|
+| 无 Spec 不写代码（警告） | `PreToolUse` on `Write\|Edit\|MultiEdit` | `.qoder/hooks/pre-write-spec-check.sh` |
+| 无测试记偏离 | `PostToolUse` on `Write\|Edit\|MultiEdit` | `.qoder/hooks/post-code-tdd-check.sh` |
+| 文档必须有引用 | `PostToolUse` on `Write\|Edit\|MultiEdit` | `.qoder/hooks/post-doc-reference-check.sh` |
 
-**适用条件**（满足任一）：
-- 经验来自当前会话（上下文连续）
-- 需要理解推理过程（为什么选A不选B）
-- 即时沉淀（刚解决的问题，热乎上下文）
-
-**典型场景**：
-- 当前会话中的技术决策记录
-- Bug修复的根因分析（理解尝试过哪些方案）
-- 调研发现的即时沉淀
-
-**执行流程**：
-1. 主Agent加载 `experience-summarization` Skill
-2. 基于完整上下文识别、提炼、结构化经验
-3. 委托KE进行冲突检测和归档（可选，如需质量审核）
-
-#### 场景B：KE Agent + experience-summarization Skill
-
-**适用条件**（满足任一）：
-- 需要对比历史经验（冲突检测）
-- 跨多个会话/任务的模式识别
-- 需要专业裁决（新旧经验矛盾）
-- 定期知识整理/归档
-
-**典型场景**：
-- 跨会话的经验模式识别
-- 知识冲突裁决
-- ADR维护和更新
-- 定期知识资产整理
-
-**执行流程**：
-1. 主Agent委托 `ak47-agent-knowledge-engineer`
-2. 传递关键上下文和原始材料
-3. KE加载 Skill 独立完成分析、提炼、冲突检测、归档
-
-**禁止行为**：
-- ❌ 调研完成不沉淀知识
-- ❌ 主Agent在无上下文优势时越俎代庖（应委托KE）
-- ❌ KE代替专业角色做技术判断
-- ❌ 记录未经验证的假设
-
-**知识检索参考**：遇到任务时，先查阅 `.ak47/experiences/trigger-guide.md` 判断应检索哪些知识。
-
----
-
-### 记忆管理规则
-
-> **重要**: 记忆系统采用三维分类体系（角色+领域+用途），Agent 间实施硬隔离。
-
-**记忆隔离原则**：
-- 每个 Agent 只能读取自己的专属记忆（`agent:{角色简写}:*`）和共享记忆（`agent:shared:*`）
-- 禁止越权读取其他 Agent 的专属记忆
-- 使用 `search_memory` 时必须指定正确的 category 参数
-
-**记忆写入原则**：
-- 用户明确要求时才写入记忆（如"请记住..."）
-- 写入时必须标注完整的 keywords（角色:领域,type,频率）
-- 临时记忆（session-context）必须设置 expires_at
-- 禁止写入未经验证的假设或矛盾内容
-
-**记忆检索原则**：
-- 优先检索高频记忆（frequency:high）
-- 根据任务类型检索对应领域（如编码任务查 `:coding`）
-- 检索失败时扩大范围或委托 KE
-- 专属记忆不足时，检索共享记忆补充
+> Hook 策略是**警告 + 记偏离到 `.ak47/deviations.log`**，不阻断。阻断式校验由 `ak47 validate` 统一执行。
 
 ---
 
 ## 🚫 禁止行为
 
-> **知识检索**: 遇到任务前,加载 `knowledge-retrieval` Skill 检索 `.ak47/experiences/` 中的知识资产。
-
-### 禁止臆想配置和 API（Think Before Coding）
-
-> **原则**: 不要假设。不要隐藏困惑。呈现权衡。
-
-- ❌ 基于推测编写配置文件
-- ❌ 假设 API 端点或参数
-- ❌ 臆想文件格式或字段
-- ❌ 默默选择一种解释然后执行（存在歧义时）
-- ❌ 困惑时继续编码（应该停下来问）
-
-**正确做法**:
-- ✅ 明确说明假设，不确定就问
-- ✅ 存在多种理解时，都列出来让用户选择
-- ✅ 如果有更简单的方法，主动说出来
-- ✅ 查阅官方文档
-
-### 禁止过度设计（Simplicity First）
-
-> **原则**: 用最少的代码解决问题。不要过度推测。
-
-- ❌ 添加要求之外的功能
-- ❌ 为一次性代码创建抽象
-- ❌ 添加未要求的"灵活性"或"可配置性"
-- ❌ 为不可能发生的场景做错误处理
-
-**正确做法**:
-- ✅ 只实现用户明确要求的功能
-- ✅ 简单函数优先，复杂度真正需要时再重构
-
-### 禁止跳过 Skills
-
-- ❌ "这个场景不需要 TDD，我直接写代码吧"
-- ❌ "错误很明显，不用调试"
-- ❌ "功能简单，不用头脑风暴"
-- ❌ 编写实现代码前未加载 `ak47-skill-test-driven-development`
-- ❌ apply 阶段加载 openspec-apply-change 后未检查 TDD Skill 是否已加载
-- ❌ 创建 OpenSpec specs 前未加载 `ak47-skill-vertical-slicing`
-
-### 禁止忽略 Hook 警告
-
-> **原则**: Qoder Hook 输出的警告不得忽略。看到警告必须停止当前操作，加载对应 Skill 补救。
-
-- ❌ 看到 TDD 偏离警告后继续编写实现代码
-- ❌ 看到 artifacts 完成提示后跳过 critical-review 直接 apply
-- ❌ 以"只是个警告"为由忽略 Hook 输出
-- ❌ 不加载对应 Skill 自行处理 Hook 警告
-
-### 禁止表面修复（Surgical Changes）
-
-> **原则**: 只碰必须碰的代码。只清理自己造成的混乱。
-
-- ❌ 不理解根因就修复
-- ❌ 只看错误信息不看调用链
-- ❌ 修复后不验证
-- ❌ "改进"相邻代码、注释或格式
-- ❌ 重构没坏的东西
-- ❌ 删除预先存在的死代码（除非被要求）
-
-**正确做法**:
-- ✅ 追溯根因（使用 systematic-debugging Skill）
-- ✅ 匹配现有代码风格
-- ✅ 只删除因你的改动而变得无用的导入/变量/函数
-
-### 禁止无目标执行（Goal-Driven Execution）
-
-> **原则**: 定义成功标准。循环验证直到达成。
-
-- ❌ 模糊的任务描述（"让它工作"）
-- ❌ 没有测试就声明完成
-- ❌ 修复 bug 但没有重现测试
-
-**正确做法**:
-- ✅ 将指令转化为可验证的目标
-  - "添加验证" → "为无效输入写测试，然后让它通过"
-  - "修复 bug" → "写重现测试，然后让它通过"
-- ✅ 多步骤任务要有验证计划
-
-
+1. **禁止臆想 API/配置** — 不要假设、不要隐藏困惑。不确定就问。查阅官方文档，新建文档标注来源。
+2. **禁止过度设计** — 只实现用户明确要求的功能，不为一次性代码创建抽象，不添加未要求的"灵活性"。
+3. **禁止表面修复** — 追溯根因（使用 `ak47-skill-systematic-debugging`），不擦表面。不"改进"相邻代码。
+4. **禁止跳过 Skills** — 1% 可能性即强制调用。详见上方 1% 规则和禁止跳过清单。
+5. **禁止无目标执行** — 将指令转化为可验证的目标。"修复 bug" → "写重现测试，然后让它通过"。
+6. **禁止忽略 Hook 警告** — 看到 "CRITICAL" / "WARNING" 标记立即停止，加载对应 Skill 补救。详见上方 Hook 警告响应映射表。
+7. **禁止跳过门控** — 每个阶段产出必须等人确认。任何跳过需记录到 `.ak47/deviations.log`。
+8. **禁止水平切 Spec** — Spec 必须按端到端用户价值垂直切分。违反即致命问题，必须重新切分。

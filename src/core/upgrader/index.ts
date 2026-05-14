@@ -1,12 +1,12 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { loadConfig, saveConfig } from '../../utils/config.js';
 import { backupConfig } from '../../core/config-manager/index.js';
 import { computeUpgradeDiff } from './diff-engine.js';
 import type { DiffEntry } from './diff-engine.js';
-import { saveSnapshot } from './snapshot-manager.js';
+import { saveSnapshot, computeFileHash } from './snapshot-manager.js';
 import { validateProject } from '../validator/index.js';
 import { loadTemplate, renderTemplate } from '../generator/template-engine.js';
 import { ensureDir } from '../../utils/paths.js';
@@ -161,6 +161,18 @@ export async function executeUpgrade(
     }
   }
 
+  // 8.1 补充 .qoder/rules/ 缺失的 AK47 管理规则文件（不受 unit registry 约束）
+  const rulesSupplemented = await supplementMissingRules(templateDir, projectDir, writtenFiles);
+  if (rulesSupplemented > 0) {
+    console.log(`[ak47] 补写 ${rulesSupplemented} 个缺失的 .qoder/rules/ 文件`);
+  }
+
+  // 8.2 比对 AGENTS.md 模板，模板已更新时生成 .new 文件供用户合并
+  const agentsMdUpdated = await supplementAgentsMd(templateDir, projectDir, writtenFiles);
+  if (agentsMdUpdated) {
+    console.log('[ak47] 模板 AGENTS.md 已更新，已生成 AGENTS.md.new 供合并');
+  }
+
   // 9. 更新 config
   config.version = cliVersion;
   config.ak47Version = cliVersion;
@@ -180,4 +192,93 @@ export async function executeUpgrade(
     entries,
     backupPath,
   };
+}
+
+/**
+ * 补充 .qoder/rules/ 缺失的 AK47 管理规则文件
+ *
+ * 与 computeUpgradeDiff 不同，rules 文件不在 unit registry 中，
+ * 但它们是 AK47 核心规则资产，缺失时必须从模板补写。
+ *
+ * @returns 补写的文件数量
+ */
+async function supplementMissingRules(
+  templateDir: string,
+  projectDir: string,
+  writtenFiles: Array<{ relativePath: string; absolutePath: string }>
+): Promise<number> {
+  const rulesTemplateDir = join(templateDir, 'qoder', 'rules');
+  const rulesTargetDir = join(projectDir, '.qoder', 'rules');
+
+  if (!existsSync(rulesTemplateDir)) return 0;
+
+  // 确保目标目录存在
+  if (!existsSync(rulesTargetDir)) {
+    await ensureDir(rulesTargetDir);
+  }
+
+  let count = 0;
+  try {
+    const templateFiles = readdirSync(rulesTemplateDir, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .map((e) => e.name);
+
+    for (const fileName of templateFiles) {
+      const targetPath = join(rulesTargetDir, fileName);
+      if (!existsSync(targetPath)) {
+        const sourcePath = join(rulesTemplateDir, fileName);
+        const content = await readFile(sourcePath);
+        await writeFile(targetPath, content);
+        writtenFiles.push({
+          relativePath: `.qoder/rules/${fileName}`,
+          absolutePath: targetPath,
+        });
+        count++;
+      }
+    }
+  } catch {
+    // 读取失败静默跳过
+  }
+
+  return count;
+}
+
+/**
+ * 比对 AGENTS.md 模板与项目文件
+ *
+ * 模板已更新且内容不一致时，生成 AGENTS.md.new 供用户手动合并。
+ * 不做直接覆盖——AGENTS.md 是项目核心行为指令文件，用户可能已有定制。
+ *
+ * @returns true 表示模板已更新
+ */
+async function supplementAgentsMd(
+  templateDir: string,
+  projectDir: string,
+  writtenFiles: Array<{ relativePath: string; absolutePath: string }>
+): Promise<boolean> {
+  const templatePath = join(templateDir, 'AGENTS.md');
+  const projectPath = join(projectDir, 'AGENTS.md');
+
+  if (!existsSync(templatePath) || !existsSync(projectPath)) return false;
+
+  try {
+    const templateHash = await computeFileHash(templatePath);
+    const projectHash = await computeFileHash(projectPath);
+
+    if (templateHash !== projectHash) {
+      // 模板已更新，生成 .new 文件供用户对比合并
+      const newPath = join(projectDir, 'AGENTS.md.new');
+      const templateContent = await readFile(templatePath);
+      await writeFile(newPath, templateContent);
+      writtenFiles.push({
+        relativePath: 'AGENTS.md.new',
+        absolutePath: newPath,
+      });
+      return true;
+    }
+  } catch {
+    // 读取失败静默跳过
+  }
+
+  return false;
 }

@@ -5,6 +5,30 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.4] - 2026-05-14
+
+### 修复
+
+- **门控体系 P0 级修复 — init/upgrade 确保规则文件齐全**
+  - `init.ts`：新增 `ensureRulesFiles()` 函数，`ak47 init` 时补写 .qoder/rules/ 下缺失的 AK47 管理规则文件（不受 safe-skip 保护）
+  - `upgrader/index.ts`：新增 `supplementMissingRules()` 函数，`ak47 upgrade` 时补充缺失的 .qoder/rules/ 规则文件
+  - `upgrader/index.ts`：新增 `supplementAgentsMd()` 函数，模板 AGENTS.md 更新时生成 .new 文件供用户合并门控章节
+  - `upgrade.ts`：升级完成后检测 AGENTS.md.new 并提示用户手动合并
+  - `doctor/index.ts`：新增 `checkRulesCompleteness()` 检查项，检测 .qoder/rules/ 完整性 + AGENTS.md 门控章节是否存在
+
+- **新增 pre-openSpec-propose-check.sh Hook**
+  - 在写 proposal.md 前检查 vision.md 是否不为"待填充"状态
+  - 注册到 PreToolUse 链（与 pre-write-artifacts-check.sh 同级）
+
+### 优化
+
+- **AGENTS.md 根文件与模板同步**：根 AGENTS.md 现直接从 templates/AGENTS.md 拷贝，保持模板为权威源
+- **模板 qoder/rules/ 齐全**：确认 gate-control.md、spec-vertical-slicing.md 等 4 个规则文件均在模板目录
+
+### 知识
+
+- 踩坑记录：模板优先原则（EXP-20260514-002）— 修复 AK47 时改 templates/ 而非生成产物
+
 ## [0.7.3] - 2026-05-14
 
 ### 优化

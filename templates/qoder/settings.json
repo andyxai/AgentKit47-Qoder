@@ -9,6 +9,10 @@
           {
             "type": "command",
             "command": "bash .qoder/hooks/pre-write-artifacts-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .qoder/hooks/pre-openSpec-propose-check.sh"
           }
         ]
       },

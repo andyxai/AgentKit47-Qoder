@@ -4,6 +4,7 @@ import { confirm, select } from '@inquirer/prompts';
 import { listBackups, restoreFromBackup } from '../../core/upgrader/config-backup.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 export const restoreCommand = new Command('restore')
   .description('从备份恢复配置（.ak47/.qoder/AGENTS.md）')
@@ -13,7 +14,13 @@ export const restoreCommand = new Command('restore')
     console.log(chalk.blue('🔄 AK47 配置恢复\n'));
 
     // 1. 定位项目根目录（当前目录或向上查找包含 .ak47 的目录）
-    let projectDir = process.cwd();
+    let projectDir: string;
+    try {
+      projectDir = process.cwd();
+    } catch {
+      projectDir = homedir();
+      console.log(chalk.yellow(`⚠ 当前工作目录已失效，回退到: ${projectDir}`));
+    }
     let found = false;
     let current = projectDir;
 
