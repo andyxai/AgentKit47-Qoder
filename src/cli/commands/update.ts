@@ -21,12 +21,21 @@ const releasesPath = REPO_URL.includes('github.com') ? '/releases' : '/-/release
 
 /**
  * 获取远程最新版本号
- * 优先 git ls-remote（最快，复用已有 git 凭证），失败则依次回退 GitLab API 和 npm registry
+ * 统一走 HTTPS（公开仓库无需认证，私有仓库走 git credential helper），
+ * 不使用 SSH——并非所有用户都配置了 SSH key。
  */
 async function getLatestVersion(): Promise<string | null> {
-  // 方案 1: git ls-remote --tags（需要 git + 仓库访问权限）
+  const httpsUrl = toHttpsRepoUrl(REPO_URL);
+  return tryGitLsRemote(httpsUrl);
+}
+
+/**
+ * 通过 git ls-remote 获取最新 tag 版本号
+ * 返回 null 表示失败（如网络不通、认证失败）
+ */
+function tryGitLsRemote(url: string): string | null {
   try {
-    const remoteTags = execSync(`git ls-remote --tags ${REPO_URL}`, {
+    const remoteTags = execSync(`git ls-remote --tags ${url}`, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'ignore'],
       timeout: 10000,
@@ -50,98 +59,36 @@ async function getLatestVersion(): Promise<string | null> {
       return sortedVersions[sortedVersions.length - 1];
     }
   } catch {
-    // git ls-remote 失败，回退 GitLab API
+    // git ls-remote 失败
   }
-
-  // 方案 2: GitLab REST API（支持 GITLAB_TOKEN 环境变量进行私有仓库认证）
-  try {
-    const apiUrl = buildGitLabApiUrl(REPO_URL);
-    if (!apiUrl) {
-      // URL 格式不支持 GitLab API，跳过方案 2
-      throw new Error('unsupported url format');
-    }
-
-    const gitlabToken = process.env.GITLAB_TOKEN || '';
-    const authHeader = gitlabToken ? `-H "PRIVATE-TOKEN: ${gitlabToken}"` : '';
-    const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 ${authHeader} "${apiUrl}"`.trim(), {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-      timeout: 20000,
-    });
-
-    const tags: Array<{ name: string }> = JSON.parse(response);
-    const versions = tags
-      .map((t) => t.name)
-      .filter((name): name is string => /^v\d+\.\d+\.\d+$/.test(name))
-      .sort((a, b) => {
-        const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
-        const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
-        if (aMajor !== bMajor) return aMajor - bMajor;
-        if (aMinor !== bMinor) return aMinor - bMinor;
-        return aPatch - bPatch;
-      });
-
-    if (versions.length > 0) {
-      return versions[versions.length - 1];
-    }
-  } catch {
-    // GitLab API 也失败
-  }
-
-  // 方案 3: npm registry（公开，无需认证，兜底）
-  try {
-    const packageName = packageJson.name || 'agentkit47';
-    const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 "https://registry.npmjs.org/${packageName}/latest"`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-      timeout: 20000,
-    });
-
-    const data = JSON.parse(response);
-    if (data.version) {
-      const version = data.version.startsWith('v') ? data.version : `v${data.version}`;
-      return version;
-    }
-  } catch {
-    // npm registry 也失败
-  }
-
   return null;
 }
 
 /**
- * 从仓库 URL 推导 GitLab API 地址
- * 支持格式:
- *   - https://HOST/OWNER/REPO.git
- *   - git@HOST:OWNER/REPO.git (SCP 风格)
- *   - ssh://git@HOST/OWNER/REPO.git
+ * 将 SSH 格式的 git URL 转为 HTTPS 格式
+ *   git@HOST:OWNER/REPO.git → https://HOST/OWNER/REPO.git
+ *   ssh://git@HOST/OWNER/REPO.git → https://HOST/OWNER/REPO.git
+ * 已是 HTTPS 格式则原样返回
  */
-function buildGitLabApiUrl(repoUrl: string): string | null {
-  // HTTPS 格式: https://HOST/OWNER/REPO.git
-  const httpsMatch = repoUrl.match(/^https?:\/\/([^\/]+)\/(.+)\.git$/);
-  if (httpsMatch) {
-    const host = httpsMatch[1];
-    const projectPath = encodeURIComponent(httpsMatch[2]);
-    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+function toHttpsRepoUrl(repoUrl: string): string {
+  // 已是 HTTPS
+  if (repoUrl.startsWith('https://') || repoUrl.startsWith('http://')) {
+    return repoUrl;
   }
 
-  // SCP 风格 SSH 格式: git@HOST:OWNER/REPO.git
+  // SCP 风格: git@HOST:OWNER/REPO.git
   const sshMatch = repoUrl.match(/^git@([^:]+):(.+)\.git$/);
   if (sshMatch) {
-    const host = sshMatch[1];
-    const projectPath = encodeURIComponent(sshMatch[2]);
-    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+    return `https://${sshMatch[1]}/${sshMatch[2]}.git`;
   }
 
   // SSH URL 格式: ssh://git@HOST/OWNER/REPO.git
   const sshUrlMatch = repoUrl.match(/^ssh:\/\/git@([^\/]+)\/(.+)\.git$/);
   if (sshUrlMatch) {
-    const host = sshUrlMatch[1];
-    const projectPath = encodeURIComponent(sshUrlMatch[2]);
-    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+    return `https://${sshUrlMatch[1]}/${sshUrlMatch[2]}.git`;
   }
 
-  return null;
+  return repoUrl;
 }
 
 /**
