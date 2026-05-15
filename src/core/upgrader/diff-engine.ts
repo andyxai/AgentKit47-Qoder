@@ -146,14 +146,7 @@ export async function computeUpgradeDiff(
     for (const relativePath of filePaths) {
       const snapshotHash = snapshot?.files[relativePath];
 
-      if (!snapshot || !snapshotHash) {
-        // 快照不存在或快照中无该文件记录 → 保守策略
-        worstStrategy = upgradePriority(worstStrategy, 'update-with-conflict');
-        fileDetails.push(`${relativePath}: 无快照记录，保守标记为冲突更新`);
-        continue;
-      }
-
-      // 计算新模板 hash（渲染后对比，与 executeUpgrade 行为一致）
+      // 先检查模板是否存在，不存在则无法更新
       const templatePath = getDefaultTemplatePath(unitId, templateDir);
       const newTemplateHash = await computeTemplateHash(templatePath, config.projectName);
 
@@ -161,6 +154,13 @@ export async function computeUpgradeDiff(
         // 模板文件不存在，无法更新
         worstStrategy = upgradePriority(worstStrategy, 'skip');
         fileDetails.push(`${relativePath}: 模板文件不存在，跳过`);
+        continue;
+      }
+
+      if (!snapshot || !snapshotHash) {
+        // 快照不存在或快照中无该文件记录 → 保守策略
+        worstStrategy = upgradePriority(worstStrategy, 'update-with-conflict');
+        fileDetails.push(`${relativePath}: 无快照记录，保守标记为冲突更新`);
         continue;
       }
 

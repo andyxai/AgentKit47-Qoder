@@ -62,6 +62,10 @@ describe('doctor', () => {
 
   it('已初始化但无快照：报告 warn', async () => {
     writeConfig();
+    // 补齐 AGENTS.md 和 rules 以避免干扰快照测试
+    writeFile('AGENTS.md', '# AGENTS.md 项目AI行为指令\n\n## 🚪 门控纪律（人工确认断点）\n...');
+    writeFile('.qoder/rules/core-behavior.md', '# core behavior');
+    writeFile('.qoder/rules/gate-control.md', '# gate');
     const report = await runDoctor(projectDir);
     const snapshotCheck = report.sections
       .find((s) => s.name === '项目结构')!
@@ -160,6 +164,7 @@ describe('doctor', () => {
     expect(names).toEqual([
       '环境',
       '项目结构',
+      '规则文件完整性',
       '快照一致性',
       '升级待办',
       '自定义资产',

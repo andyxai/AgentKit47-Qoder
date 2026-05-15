@@ -5,6 +5,36 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.7] - 2026-05-15
+
+### 优化
+
+- **version check 三重兜底**：`ak47 update` 版本检测在 git ls-remote 和 GitLab API 之后新增 npm registry 兜底，提高私有仓库和受限网络环境的可用性
+  - 提取 `buildGitLabApiUrl()` 独立函数，支持 HTTPS / SCP-SSH / SSH URL 三种仓库地址格式
+  - GitLab API 支持 `GITLAB_TOKEN` 环境变量进行私有仓库认证
+- **init 宪法框架生成优化**：骨架模板从直接写入 `docs/` 改为先放入 `.ak47/staged-docs/`，用户填充内容后手动移入，避免空模板污染正式文档目录
+- **diff-engine 逻辑重排**：`computeUpgradeDiff()` 先检查模板是否存在再检查快照，避免模板缺失时的多余操作
+
+### 修复
+
+- **init .gitignore 审计跟踪保留**：`.ak47/deviations.log` 从 ignore 规则中移除，确保偏离记录始终可见
+
+# [0.7.6] - 2026-05-15
+
+### 强化
+
+- **OpenSpec 文档完整性检查级联化**：
+  - `pre-write-artifacts-check.sh`：根据写入目标类型级联检查所有前置 artifact，覆盖 proposal→G1、design→G1+G3、specs→G1+G3+G4、tasks→G1+G3+G4+G5、源码→G1+G3+G4+G5+G6
+  - `post-artifacts-complete-check.sh`：新增 PRD（G1）检查，真正的"全部前置文档齐全"才触发 G7 critical-review
+  - 活跃 Hook 与模板双向同步
+- **`ak47 init` 体验增强**：
+  - 初始化时自动复制 `.ak47/briefs/` 和 `.ak47/out-of-scope/` 目录
+  - 从模板预生成 `experiences/index.md` 和 `trigger-guide.md`（knowledge-retrieval Skill 依赖）
+
+### 测试
+
+- `doctor.test.ts`：补充规则文件完整性测试验证
+
 ## [0.7.5] - 2026-05-14
 
 ### 强化

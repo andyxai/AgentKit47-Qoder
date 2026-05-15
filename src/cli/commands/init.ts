@@ -417,6 +417,16 @@ async function copyQoderConfig(projectPath: string): Promise<void> {
     console.log(chalk.gray('  → 复制系统模板到 .ak47/templates/'));
     await copyDirectoryRecursive(ak47TemplatesDir, ak47TargetDir);
   }
+
+  // 3. 复制 ak47/briefs/ 和 ak47/out-of-scope/ 目录到 .ak47/
+  for (const subDir of ['briefs', 'out-of-scope']) {
+    const briefsSource = path.join(getTemplatesRoot(), 'ak47', subDir);
+    const briefsTarget = path.join(projectPath, '.ak47', subDir);
+    if (fs.existsSync(briefsSource) && hasAnyFile(briefsSource)) {
+      console.log(chalk.gray(`  → 复制 ${subDir}/ 到 .ak47/${subDir}/`));
+      await copyDirectoryRecursive(briefsSource, briefsTarget);
+    }
+  }
 }
 
 /**
@@ -576,7 +586,7 @@ async function generateContextMd(projectPath: string): Promise<void> {
  */
 async function handleGitignore(projectPath: string): Promise<{ created: boolean; patched: boolean }> {
   const gitignorePath = path.join(projectPath, '.gitignore');
-  const requiredRules = ['.worktrees/', '.ak47/deviations.log', '.ak47/*.lock'];
+  const requiredRules = ['.worktrees/', '.ak47/*.lock'];
   
   if (!fs.existsSync(gitignorePath)) {
     // 场景 1: 不存在 → 创建
@@ -584,7 +594,6 @@ async function handleGitignore(projectPath: string): Promise<{ created: boolean;
 .worktrees/
 
 # ak47 运行时文件
-.ak47/deviations.log
 .ak47/*.lock
 `;
     fs.writeFileSync(gitignorePath, content, 'utf-8');
@@ -607,7 +616,7 @@ async function handleGitignore(projectPath: string): Promise<{ created: boolean;
     if (!content.endsWith('\n')) {
       content += '\n';
     }
-    content += `\n# ak47 运行时文件（由 ak47 init 自动追加）\n${missing.join('\n')}\n`;
+    content += `\n# ak47 运行时文件（由 ak47 init 自动追加，不含 deviations.log 以保留审计跟踪）\n${missing.join('\n')}\n`;
     fs.writeFileSync(gitignorePath, content, 'utf-8');
     console.log(chalk.green(`✓ 已补全 .gitignore（追加 ${missing.join(', ')}）`));
     return { created: false, patched: true };
@@ -794,17 +803,23 @@ async function initializeExperiences(projectPath: string): Promise<void> {
   const experiencesDir = path.join(projectPath, '.ak47', 'experiences');
   
   try {
-    // 创建目录结构（不预生成任何文档）
+    // 创建目录结构
     fs.mkdirSync(experiencesDir, { recursive: true });
     fs.mkdirSync(path.join(experiencesDir, 'tool-research'), { recursive: true });
     fs.mkdirSync(path.join(experiencesDir, 'best-practices'), { recursive: true });
     fs.mkdirSync(path.join(experiencesDir, 'pitfall-records'), { recursive: true });
     fs.mkdirSync(path.join(experiencesDir, 'decisions'), { recursive: true });
-    
-    // 渐进式文档创建：
-    // - index.md 由 experience-summarization Skill 在首个经验沉淀时创建
-    // - trigger-guide.md 由 AI 在需要时从 .ak47/templates/experiences/ 读取
-    // 不在此处预生成空文档
+
+    // 从模板复制 index.md 和 trigger-guide.md（knowledge-retrieval Skill 依赖）
+    const experiencesTemplateDir = path.join(getTemplatesRoot(), 'experiences');
+    for (const fileName of ['index.md', 'trigger-guide.md']) {
+      const src = path.join(experiencesTemplateDir, fileName);
+      const dest = path.join(experiencesDir, fileName);
+      if (fs.existsSync(src) && !fs.existsSync(dest)) {
+        fs.copyFileSync(src, dest);
+        console.log(chalk.gray(`  → 复制 experiences/${fileName}`));
+      }
+    }
   } catch (err) {
     console.log(chalk.yellow(`⚠️  知识资产库初始化失败: ${err instanceof Error ? err.message : String(err)}`));
   }

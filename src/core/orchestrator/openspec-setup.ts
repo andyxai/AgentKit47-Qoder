@@ -31,18 +31,24 @@ async function createConstitutionFramework(projectDir: string, projectName: stri
   console.log('[ak47] 正在创建宪法层框架...');
 
   try {
-    // 1. 创建 PRD 目录结构
-    const prdDir = join(projectDir, 'docs', 'prd');
-    await mkdir(join(prdDir, 'modules'), { recursive: true });
+    // 1. 创建正式文档空目录结构（docs/ 下仅建目录，不放空骨架）
+    const docsPrdDir = join(projectDir, 'docs', 'prd');
+    const docsArchDir = join(projectDir, 'docs', 'architecture');
+    await mkdir(join(docsPrdDir, 'modules'), { recursive: true });
+    await mkdir(join(docsArchDir, 'modules'), { recursive: true });
+    // 写入 .gitkeep 保持空目录可被 Git 追踪
+    await writeFile(join(docsPrdDir, '.gitkeep'), '', 'utf-8');
+    await writeFile(join(docsArchDir, '.gitkeep'), '', 'utf-8');
 
-    // 2. 创建架构文档目录结构
-    const archDir = join(projectDir, 'docs', 'architecture');
-    await mkdir(join(archDir, 'modules'), { recursive: true });
+    // 2. 渲染后的骨架模板放入 .ak47/staged-docs/（填充内容后再由用户移入 docs/）
+    const stagedPrdDir = join(projectDir, '.ak47', 'staged-docs', 'prd');
+    const stagedArchDir = join(projectDir, '.ak47', 'staged-docs', 'architecture');
+    await mkdir(join(stagedPrdDir, 'modules'), { recursive: true });
+    await mkdir(join(stagedArchDir, 'modules'), { recursive: true });
 
-    // 3. 使用 Mustache 渲染模板生成文档
-    await renderConstitutionDocs(prdDir, archDir, projectName);
+    await renderConstitutionDocs(stagedPrdDir, stagedArchDir, projectName);
 
-    console.log('[ak47] 宪法层框架创建完成。');
+    console.log('[ak47] 宪法层框架创建完成（模板已放入 .ak47/staged-docs/，填充内容后移入 docs/）。');
   } catch (err) {
     console.warn(`[ak47] createConstitutionFramework 出错：${err instanceof Error ? err.message : String(err)}`);
   }
@@ -53,10 +59,11 @@ async function createConstitutionFramework(projectDir: string, projectName: stri
  *
  * 根据 ADR-001 决策：
  * - 模板文件保留在 templates/ 目录（源文件）
- * - docs/ 目录存放渲染后的文档（产物）
+ * - 渲染后的骨架文档先放入 .ak47/staged-docs/（产物缓存）
+ * - 用户填充内容后手动移入 docs/（正式产物）
  *
- * @param prdDir - PRD 目录
- * @param archDir - 架构文档目录
+ * @param prdDir - PRD 目标目录
+ * @param archDir - 架构文档目标目录
  * @param projectName - 项目名称
  */
 async function renderConstitutionDocs(prdDir: string, archDir: string, projectName: string): Promise<void> {

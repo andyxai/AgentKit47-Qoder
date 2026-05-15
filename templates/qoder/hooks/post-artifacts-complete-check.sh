@@ -27,7 +27,7 @@ fi
 
 CHANGE_NAME="$(basename "$ACTIVE_CHANGE")"
 
-# ── 检查四件套是否齐全 ──
+# ── 检查所有前置文档是否齐全（含 PRD + 四件套） ──
 ALL_READY=true
 
 check_exists() {
@@ -42,6 +42,17 @@ check_nonempty_dir() {
     ALL_READY=false
   fi
 }
+
+# 检查 PRD（G1）
+check_prd() {
+  local prd_file="docs/prd/vision.md"
+  if [ ! -f "$prd_file" ] || [ ! -s "$prd_file" ]; then
+    ALL_READY=false
+  elif grep -qE '待填充|TBD|TODO' "$prd_file" 2>/dev/null; then
+    ALL_READY=false
+  fi
+}
+check_prd
 
 check_exists "$ACTIVE_CHANGE/proposal.md"
 check_exists "$ACTIVE_CHANGE/design.md"

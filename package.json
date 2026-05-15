@@ -1,6 +1,6 @@
 {
   "name": "agentkit47",
-  "version": "0.7.5",
+  "version": "0.7.7",
   "description": "AI 工程化脚手架 - 集成 OpenSpec 与 27 个工程 Skills，搭建 AI 辅助开发基础设施",
   "type": "module",
   "main": "./dist/cli/index.js",

@@ -115,7 +115,18 @@ export async function executeConflictResolution(
   conflict: ConflictFile,
   resolution: ConflictResolution
 ): Promise<void> {
-  const { rm, cp } = await import('node:fs/promises');
+  const { rm, cp, access } = await import('node:fs/promises');
+
+  // 需要读取 .new 文件的操作，提前检查 .new 是否存在
+  const needsTemplate = ['use-template', 'use-all-template'].includes(resolution);
+  if (needsTemplate) {
+    try {
+      await access(conflict.templatePath);
+    } catch {
+      console.log(chalk.yellow(`   ⚠ .new 文件不存在，跳过: ${conflict.relativePath}`));
+      return;
+    }
+  }
 
   switch (resolution) {
     case 'keep-user':

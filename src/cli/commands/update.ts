@@ -21,7 +21,7 @@ const releasesPath = REPO_URL.includes('github.com') ? '/releases' : '/-/release
 
 /**
  * 获取远程最新版本号
- * 优先 git ls-remote（最快，复用已有 git 凭证），失败则回退 GitLab API
+ * 优先 git ls-remote（最快，复用已有 git 凭证），失败则依次回退 GitLab API 和 npm registry
  */
 async function getLatestVersion(): Promise<string | null> {
   // 方案 1: git ls-remote --tags（需要 git + 仓库访问权限）
@@ -53,39 +53,92 @@ async function getLatestVersion(): Promise<string | null> {
     // git ls-remote 失败，回退 GitLab API
   }
 
-  // 方案 2: GitLab REST API（只需 HTTPS，无需 git 凭证）
+  // 方案 2: GitLab REST API（支持 GITLAB_TOKEN 环境变量进行私有仓库认证）
   try {
-    // 从 REPO_URL 推导 API 地址: https://HOST/OWNER/REPO.git → https://HOST/api/v4/projects/OWNER%2FREPO/repository/tags
-    const urlMatch = REPO_URL.match(/^https?:\/\/([^\/]+)\/(.+)\.git$/);
-    if (urlMatch) {
-      const host = urlMatch[1];
-      const projectPath = encodeURIComponent(urlMatch[2]);
-      const apiUrl = `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+    const apiUrl = buildGitLabApiUrl(REPO_URL);
+    if (!apiUrl) {
+      // URL 格式不支持 GitLab API，跳过方案 2
+      throw new Error('unsupported url format');
+    }
 
-      const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 "${apiUrl}"`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore'],
-        timeout: 20000,
+    const gitlabToken = process.env.GITLAB_TOKEN || '';
+    const authHeader = gitlabToken ? `-H "PRIVATE-TOKEN: ${gitlabToken}"` : '';
+    const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 ${authHeader} "${apiUrl}"`.trim(), {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+      timeout: 20000,
+    });
+
+    const tags: Array<{ name: string }> = JSON.parse(response);
+    const versions = tags
+      .map((t) => t.name)
+      .filter((name): name is string => /^v\d+\.\d+\.\d+$/.test(name))
+      .sort((a, b) => {
+        const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
+        const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
+        if (aMajor !== bMajor) return aMajor - bMajor;
+        if (aMinor !== bMinor) return aMinor - bMinor;
+        return aPatch - bPatch;
       });
 
-      const tags: Array<{ name: string }> = JSON.parse(response);
-      const versions = tags
-        .map((t) => t.name)
-        .filter((name): name is string => /^v\d+\.\d+\.\d+$/.test(name))
-        .sort((a, b) => {
-          const [aMajor, aMinor, aPatch] = a.slice(1).split('.').map(Number);
-          const [bMajor, bMinor, bPatch] = b.slice(1).split('.').map(Number);
-          if (aMajor !== bMajor) return aMajor - bMajor;
-          if (aMinor !== bMinor) return aMinor - bMinor;
-          return aPatch - bPatch;
-        });
-
-      if (versions.length > 0) {
-        return versions[versions.length - 1];
-      }
+    if (versions.length > 0) {
+      return versions[versions.length - 1];
     }
   } catch {
     // GitLab API 也失败
+  }
+
+  // 方案 3: npm registry（公开，无需认证，兜底）
+  try {
+    const packageName = packageJson.name || 'agentkit47';
+    const response = execSync(`curl -sSL --connect-timeout 10 --max-time 15 "https://registry.npmjs.org/${packageName}/latest"`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+      timeout: 20000,
+    });
+
+    const data = JSON.parse(response);
+    if (data.version) {
+      const version = data.version.startsWith('v') ? data.version : `v${data.version}`;
+      return version;
+    }
+  } catch {
+    // npm registry 也失败
+  }
+
+  return null;
+}
+
+/**
+ * 从仓库 URL 推导 GitLab API 地址
+ * 支持格式:
+ *   - https://HOST/OWNER/REPO.git
+ *   - git@HOST:OWNER/REPO.git (SCP 风格)
+ *   - ssh://git@HOST/OWNER/REPO.git
+ */
+function buildGitLabApiUrl(repoUrl: string): string | null {
+  // HTTPS 格式: https://HOST/OWNER/REPO.git
+  const httpsMatch = repoUrl.match(/^https?:\/\/([^\/]+)\/(.+)\.git$/);
+  if (httpsMatch) {
+    const host = httpsMatch[1];
+    const projectPath = encodeURIComponent(httpsMatch[2]);
+    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+  }
+
+  // SCP 风格 SSH 格式: git@HOST:OWNER/REPO.git
+  const sshMatch = repoUrl.match(/^git@([^:]+):(.+)\.git$/);
+  if (sshMatch) {
+    const host = sshMatch[1];
+    const projectPath = encodeURIComponent(sshMatch[2]);
+    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
+  }
+
+  // SSH URL 格式: ssh://git@HOST/OWNER/REPO.git
+  const sshUrlMatch = repoUrl.match(/^ssh:\/\/git@([^\/]+)\/(.+)\.git$/);
+  if (sshUrlMatch) {
+    const host = sshUrlMatch[1];
+    const projectPath = encodeURIComponent(sshUrlMatch[2]);
+    return `https://${host}/api/v4/projects/${projectPath}/repository/tags?per_page=50`;
   }
 
   return null;
