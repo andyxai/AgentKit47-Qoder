@@ -22,9 +22,10 @@ echo "  → 检查调试代码..."
 debug_patterns="console\.log\(|debugger;|print\(.*debug|\.only\s*\(}"
 if git diff --cached --name-only | grep -Eq '\.(ts|js|py)$'; then
   if git diff --cached | grep -Eq "$debug_patterns"; then
-    echo "⚠️  警告: 检测到调试代码（console.log/debugger/print）"
-    echo "   请在提交前移除"
-    # 不阻止提交，只是警告
+    echo "❌ 检测到调试代码（console.log/debugger/print），提交已阻断"
+    echo "   请在提交前移除调试代码"
+    echo "   例外：CLI 输出日志（如 chalk 输出的 console.log）若确认为必要，请用 --no-verify 跳过"
+    exit 1
   fi
 fi
 
@@ -40,9 +41,10 @@ large_files=$(git diff --cached --name-only | while read file; do
 done)
 
 if [ -n "$large_files" ]; then
-  echo "⚠️  警告: 包含大文件（> 1MB）"
+  echo "❌ 包含大文件（> 1MB），提交已阻断"
   echo "$large_files"
-  echo "   考虑使用 Git LFS 或外部存储"
+  echo "   使用 Git LFS 或外部存储，或 --no-verify 跳过"
+  exit 1
 fi
 
 # 4. 检查是否修改了 .ak47/rules.md（需要 AI 验证）

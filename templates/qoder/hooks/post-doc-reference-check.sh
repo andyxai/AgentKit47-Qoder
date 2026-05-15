@@ -2,7 +2,7 @@
 # Qoder PostToolUse Hook — 文档引用来源检查
 #
 # 规则：新建/修改 .md 文档应标注官方引用或 docs/research/ 依据（禁止臆想）。
-# 策略：警告 + 结构化日志，不阻断；元文档与用户经验文档豁免。
+# 策略：阻断。缺失引用来源时阻断写入，元文档与用户经验文档豁免。
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -29,8 +29,8 @@ HAS_RESEARCH="${HAS_RESEARCH:-0}"
 HAS_URL="${HAS_URL:-0}"
 
 if [ "$HAS_RESEARCH" = "0" ] && [ "$HAS_URL" = "0" ]; then
-  printf '⚠️  文档可能缺少引用来源：%s\n' "$FILE_PATH" >&2
-  printf '   建议：标注 docs/research/<topic>.md 或官方文档 URL\n' >&2
+  printf '❌ 文档缺少引用来源：%s，写入已阻断\n' "$FILE_PATH" >&2
+  printf '   必须标注 docs/research/<topic>.md 或官方文档 URL\n' >&2
 
   LOG_DIR=".ak47"
   LOG_FILE="$LOG_DIR/deviations.log"
@@ -50,6 +50,7 @@ if [ "$HAS_RESEARCH" = "0" ] && [ "$HAS_URL" = "0" ]; then
       printf '  auto_logged: true\n'
     } >> "$LOG_FILE"
   fi
+  exit 1
 fi
 
 exit 0

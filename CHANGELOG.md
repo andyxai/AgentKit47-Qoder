@@ -5,6 +5,26 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.5] - 2026-05-14
+
+### 强化
+
+- **Hook 全面改为阻断策略**：所有 10 个 Qoder Hook 从「警告不阻断」(exit 0) 改为「阻断」(exit 1)
+  - Git pre-commit：调试代码 + 大文件检查从警告改为阻断
+  - post-code-tdd-check.sh：缺失测试文件时阻断写入
+  - post-doc-reference-check.sh：文档缺失引用来源时阻断写入
+  - pre-write-spec-check.sh：有 changes 但无 spec.md 时阻断代码写入
+  - pre-write-artifacts-check.sh：缺失 G3-G6 artifacts 时阻断代码写入
+  - pre-code-tdd-check.sh：未加载 TDD Skill 且无测试文件时阻断代码写入
+  - pre-completion-check.sh：未完成 G8 审查或 G10 测试覆盖不足时阻断提交
+  - post-artifacts-complete-check.sh：artifacts 全齐后强制阻断直到完成 G7 critical-review
+  - post-artifact-modification-check.sh：受控 Artifact 被修改时强制阻断直到增量审查
+  - post-tasks-completed-check.sh：tasks 完成且满足阈值时强制阻断直到生成 Brief
+  - pre-openSpec-propose-check.sh：PRD 未填充时阻断 proposal 创建
+- **模板双向对称**：templates/qoder/hooks/ 与 .qoder/hooks/ 完整对齐（各 10 个文件）
+- 新增模板文件：post-artifact-modification-check.sh、post-tasks-completed-check.sh
+- 新增 .qoder 文件：pre-openSpec-propose-check.sh
+
 ## [0.7.4] - 2026-05-14
 
 ### 修复

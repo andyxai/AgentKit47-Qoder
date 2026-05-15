@@ -3,7 +3,7 @@
 #
 # 规则：创建 proposal.md 前，检查 docs/prd/vision.md 是否已完成填充。
 # 覆盖门控：G1 (需求理解确认) 的硬性兜底
-# 策略：警告不阻断。AI 应按 core-behavior.md 的 Hook 警告响应规则完成需求沉淀。
+# 策略：阻断。PRD 未完成填充时阻断 proposal 创建，强制先完成需求沉淀。
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -33,14 +33,15 @@ else
 fi
 
 if [ "$PRD_EMPTY" = true ]; then
-  printf '\n🔔 [G1] PRD 文档未完成填充！\n' >&2
+  printf '\n❌ [G1] PRD 文档未完成填充，proposal 创建已阻断！\n' >&2
   printf '   docs/prd/vision.md 为空或仍含占位内容。\n' >&2
   printf '   \n' >&2
   printf '   按 core-behavior.md "新项目首次使用必须盘问" 规则：\n' >&2
-  printf '   → 应先完成需求盘问并将结果沉淀到 docs/prd/vision.md\n' >&2
+  printf '   → 必须先完成需求盘问并将结果沉淀到 docs/prd/vision.md\n' >&2
   printf '   → 用户确认需求理解正确后，再创建 proposal\n' >&2
   printf '   \n' >&2
   printf '   🚫 禁止跳过需求沉淀直接创建 proposal\n' >&2
+  exit 1
 fi
 
 exit 0

@@ -2,7 +2,7 @@
 # Qoder PreToolUse Hook — 代码写入前 TDD Skill 加载检查
 #
 # 规则：编写代码/配置文件前，提醒 AI 确保已加载 TDD Skill。
-# 策略：输出提醒（非阻断），已提醒过的会话内不再重复。
+# 策略：阻断。未加载 TDD Skill 且无测试文件时阻断代码写入。
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -42,9 +42,9 @@ if [ -f "$MARKER_FILE" ]; then
 fi
 touch "$MARKER_FILE"
 
-printf '🔔  TDD-GATE: 即将写入代码文件 %s\n' "$FILE_PATH" >&2
-printf '    未发现已有测试文件，请确保已加载 ak47-skill-test-driven-development\n' >&2
-printf '    流程: RED（先写测试）→ GREEN（再写实现）→ REFACTOR\n' >&2
-printf '    如确认无需 TDD，请记录偏离到 .ak47/deviations.log 并说明原因\n' >&2
+printf '❌ TDD-GATE: 即将写入代码文件 %s，写入已阻断\n' "$FILE_PATH" >&2
+printf '   未发现已有测试文件，必须先加载 ak47-skill-test-driven-development\n' >&2
+printf '   流程: RED（先写测试）→ GREEN（再写实现）→ REFACTOR\n' >&2
+printf '   如确认无需 TDD，请记录偏离到 .ak47/deviations.log 并说明原因\n' >&2
 
-exit 0
+exit 1

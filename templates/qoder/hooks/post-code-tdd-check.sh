@@ -2,7 +2,7 @@
 # Qoder PostToolUse Hook — TDD 测试存在性检查
 #
 # 规则：对代码文件（非测试）检查是否存在邻近 .test.<ext> 文件，缺失则记偏离。
-# 策略：警告 + 结构化日志，不阻断。
+# 策略：阻断。缺失测试文件时阻断写入，强制 TDD 流程。
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -31,8 +31,8 @@ if [ -f "$DIR/__tests__/${BASE%.*}.test.${BASE##*.}" ]; then
   exit 0
 fi
 
-printf '⚠️  偏离 TDD：未找到测试文件 %s\n' "$TEST_FILE" >&2
-printf '   建议遵循 RED → GREEN → REFACTOR\n' >&2
+printf '❌ 偏离 TDD：未找到测试文件 %s，写入已阻断\n' "$TEST_FILE" >&2
+printf '   必须遵循 RED → GREEN → REFACTOR，先写测试再写实现\n' >&2
 
 log_deviation() {
   LOG_DIR=".ak47"
@@ -61,4 +61,4 @@ log_deviation() {
 }
 
 log_deviation
-exit 0
+exit 1

@@ -2,11 +2,11 @@
 # Qoder PreToolUse Hook — Spec 存在性检查
 #
 # 规则：在已启动 OpenSpec 流程的项目中，写代码前应当有活跃的 Spec。
-# 策略：警告不阻断（避免新项目开箱即挂）。阻塞式检查由 ak47 validate 统一执行。
+# 策略：阻断。有 changes 但无 spec.md 时阻断代码写入，强制先完成 Spec。
 #
 # 退出码约定：
-#   0  放行（含警告）
-#   非 0  保留给未来强阻断需求，当前一律 0
+#   0  放行（无违规）
+#   1  阻断（缺少 spec.md）
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -33,10 +33,12 @@ if [ -z "$(ls -A openspec/changes 2>/dev/null)" ]; then
   exit 0
 fi
 
-# 有 changes/ 但无任何 spec.md → 仅警告
+# 有 changes/ 但无任何 spec.md → 阻断
 if ! ls openspec/changes/*/spec.md 1>/dev/null 2>&1; then
-  printf '⚠️  强建议：openspec/changes/ 存在但缺少 spec.md\n' >&2
-  printf '   建议执行：/opsx:propose 或 openspec propose\n' >&2
+  printf '❌ openspec/changes/ 存在但缺少 spec.md，写入已阻断\n' >&2
+  printf '   必须先完成 Spec 定义再写代码\n' >&2
+  printf '   执行：/opsx:propose 或 openspec propose\n' >&2
+  exit 1
 fi
 
 exit 0

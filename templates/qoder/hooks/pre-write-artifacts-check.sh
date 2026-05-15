@@ -3,11 +3,11 @@
 #
 # 规则：在已启动 OpenSpec 流程的项目中，写代码前应确保必要 artifacts 齐全。
 # 覆盖门控：G3 (proposal) / G4 (design) / G5 (specs) / G6 (tasks)
-# 策略：警告不阻断（避免新项目开箱即挂）。阻塞式检查由 ak47 validate 统一执行。
+# 策略：阻断。缺失必要 artifact 时阻断代码写入，强制完成 OpenSpec 流程。
 #
 # 退出码约定：
-#   0  放行（含警告）
-#   非 0  保留给未来强阻断需求，当前一律 0
+#   0  放行（无违规）
+#   1  阻断（缺失 artifact）
 set -eu
 
 TOOL_INPUT="$(cat)"
@@ -58,7 +58,7 @@ check_artifact() {
   local gate="$2"
   local path="$ACTIVE_CHANGE$artifact"
   if [ ! -f "$path" ] && [ ! -d "$path" ]; then
-    printf '⚠️  [%s] 缺失 %s：%s\n' "$gate" "$artifact" "$path" >&2
+    printf '❌ [%s] 缺失 %s：%s\n' "$gate" "$artifact" "$path" >&2
     MISSING_COUNT=$((MISSING_COUNT + 1))
   fi
 }
@@ -67,7 +67,7 @@ check_artifact_nonempty_dir() {
   local gate="$2"
   local path="$ACTIVE_CHANGE$artifact"
   if [ ! -d "$path" ] || [ -z "$(ls -A "$path" 2>/dev/null)" ]; then
-    printf '⚠️  [%s] 缺失 %s：%s\n' "$gate" "$artifact" "$path" >&2
+    printf '❌ [%s] 缺失 %s：%s\n' "$gate" "$artifact" "$path" >&2
     MISSING_COUNT=$((MISSING_COUNT + 1))
   fi
 }
@@ -78,9 +78,11 @@ check_artifact_nonempty_dir "specs/" "G5"
 check_artifact "tasks.md"    "G6"
 
 if [ "$MISSING_COUNT" -gt 0 ]; then
-  printf '\n📋 Change「%s」缺少 %d 个必要 artifact，建议先完成 OpenSpec 流程再写代码。\n' \
+  printf '\n❌ Change「%s」缺少 %d 个必要 artifact，写入已阻断\n' \
     "$CHANGE_NAME" "$MISSING_COUNT" >&2
+  printf '   必须先完成 OpenSpec 流程再写代码\n' >&2
   printf '   快速补齐：/opsx:continue %s\n' "$CHANGE_NAME" >&2
+  exit 1
 fi
 
 exit 0

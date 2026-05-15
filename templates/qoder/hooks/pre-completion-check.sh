@@ -3,7 +3,7 @@
 #
 # 规则：在 Task 标记完成或执行 git commit 时，检查是否已执行代码审查和测试覆盖。
 # 覆盖门控：G8 (代码审查) / G10 (功能验收)
-# 策略：警告不阻断。AI 应按 core-behavior.md 的 Hook 警告响应规则加载对应 Skill。
+# 策略：阻断。未完成审查或测试覆盖不足时阻断提交，强制质量门控。
 set -eu
 
 # ── 只对 Task 和 Bash 工具触发 ──
@@ -50,8 +50,8 @@ if ls openspec/changes/*/review*.md 1>/dev/null 2>&1; then
 fi
 
 if [ "$HAS_REVIEW" = false ]; then
-  printf '⚠️  [G8] 未检测到代码审查记录。\n' >&2
-  printf '   建议执行：加载 ak47-skill-code-review 或委托 ak47-agent-reviewer\n' >&2
+  printf '❌ [G8] 未检测到代码审查记录，提交已阻断\n' >&2
+  printf '   必须先执行：加载 ak47-skill-code-review 或委托 ak47-agent-reviewer\n' >&2
   HAS_WARNING=true
 fi
 
@@ -78,18 +78,19 @@ for dir in src/ lib/ app/; do
 done
 
 if [ "$SRC_COUNT" -gt 0 ] && [ "$UNTESTED_COUNT" -gt 0 ]; then
-  # 如果未测试比例 > 30%，警告
+  # 如果未测试比例 > 30%，阻断
   UNTESTED_PCT=$((UNTESTED_COUNT * 100 / SRC_COUNT))
   if [ "$UNTESTED_PCT" -gt 30 ]; then
-    printf '⚠️  [G10] 测试覆盖率不足：%d/%d 源码文件无测试（%d%%）\n' \
+    printf '❌ [G10] 测试覆盖率不足：%d/%d 源码文件无测试（%d%%），提交已阻断\n' \
       "$UNTESTED_COUNT" "$SRC_COUNT" "$UNTESTED_PCT" >&2
-    printf '   建议遵循 TDD 流程补写测试后再提交。\n' >&2
+    printf '   必须先遵循 TDD 流程补写测试后再提交\n' >&2
     HAS_WARNING=true
   fi
 fi
 
 if [ "$HAS_WARNING" = true ]; then
-  printf '\n📋 提交前请确保已完成代码审查和测试覆盖。\n' >&2
+  printf '\n❌ 提交前必须完成代码审查和测试覆盖\n' >&2
+  exit 1
 fi
 
 exit 0
